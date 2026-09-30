@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1F3A">
+<title>Monitor · Vulcanização</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563EB'/%3E%3Crect x='12' y='12' width='16' height='16' rx='3' fill='%23fff'/%3E%3Crect x='36' y='12' width='16' height='16' rx='3' fill='%23fff' opacity='.75'/%3E%3Crect x='12' y='36' width='16' height='16' rx='3' fill='%23fff' opacity='.75'/%3E%3Crect x='36' y='36' width='16' height='16' rx='3' fill='%2393C5FD'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Monitor">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="Monitor de vulcanização — registro e layout de máquinas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0B1F3A;--navy2:#0E2A4A;--navy-text:#E2E8F0;--navy-muted:#94A3B8;
+  --blue:#2563EB;--blue-d:#1D4ED8;--blue-l:#EFF6FF;--blue-m:#BFDBFE;
+  --bg:#EEF2F7;--surface:#FFFFFF;--sunk:#F6F8FB;--line:#E2E8F0;--line2:#EEF2F6;
+  --text:#0F172A;--text2:#475569;--text3:#64748B;
+  --ok:#15803D;--ok-bg:#F0FDF4;--ok-ln:#86EFAC;
+  --warn:#B45309;--warn-bg:#FFFBEB;--warn-ln:#FCD34D;
+  --danger:#DC2626;--danger-bg:#FEF2F2;--danger-ln:#FCA5A5;
+  --r:16px;--r-sm:12px;--r-xs:8px;
+  --sh:0 1px 2px rgba(15,23,42,.05),0 0 0 1px rgba(15,23,42,.04);
+  --sh-lg:0 18px 48px rgba(15,23,42,.18);
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --nav-h:62px;
+}
+/* cores por status: cada classe define --c (texto/borda forte), --cb (fundo), --cl (borda leve) */
+.r-OK {--c:#15803D;--cb:#F0FDF4;--cl:#86EFAC}
+.r-MAN{--c:#C2410C;--cb:#FFF7ED;--cl:#FDBA74}
+.r-FOP{--c:#7E22CE;--cb:#FAF5FF;--cl:#D8B4FE}
+.r-INT{--c:#475569;--cb:#F1F5F9;--cl:#94A3B8}
+.r-FAB{--c:#B91C1C;--cb:#FEF2F2;--cl:#FCA5A5}
+.r-VOL{--c:#A16207;--cb:#FEFCE8;--cl:#FDE047}
+.r-NONE{--c:#64748B;--cb:#F8FAFC;--cl:#E2E8F0}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.4}
+button{font:inherit;color:inherit;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- topo ---------- */
+.top{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--navy);color:#fff;box-shadow:0 2px 12px rgba(3,12,26,.18)}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{width:36px;height:36px;border-radius:11px;background:var(--blue);display:grid;place-items:center;flex-shrink:0}
+.logo svg{width:18px;height:18px}
+.brand b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.brand span{display:block;font-size:11px;font-weight:600;color:var(--navy-muted)}
+.top-right{display:flex;align-items:center;gap:8px}
+.hdate{font-size:12px;font-weight:700;color:var(--navy-muted);background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);padding:5px 10px;border-radius:999px;white-space:nowrap}
+.save-err{font-size:11px;font-weight:700;background:var(--danger);color:#fff;padding:5px 10px;border-radius:999px}
+
+/* ---------- navegação ---------- */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding:4px 6px max(4px,env(safe-area-inset-bottom))}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:var(--nav-h);border:0;background:none;border-radius:12px;color:var(--text3);font-size:11px;font-weight:700}
+.ni svg{width:22px;height:22px}
+.ni.active{color:var(--blue);background:var(--blue-l)}
+.ni:active{background:var(--blue-l)}
+
+main{overflow-x:clip;padding:14px 14px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom));max-width:1320px;margin:0 auto}
+.page{display:none}
+.page.active{display:block}
+
+/* ---------- blocos base ---------- */
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:12px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+h2{font-size:15px;font-weight:800;letter-spacing:-.01em}
+.sub{font-size:12px;color:var(--text3);font-weight:500}
+.muted{color:var(--text3)}
+.row{display:flex;gap:8px;align-items:center}
+.grow{flex:1;min-width:0}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:0 16px;border-radius:var(--r-sm);border:1px solid transparent;font-weight:700;font-size:14px;white-space:nowrap;transition:filter .15s,background .15s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn svg{width:17px;height:17px;flex-shrink:0}
+.bp{background:var(--blue);color:#fff}
+.bp:hover{filter:brightness(1.07)}
+.bo{background:var(--surface);color:var(--text2);border-color:var(--line)}
+.bo:hover{border-color:var(--blue-m);color:var(--blue)}
+.bok{background:var(--ok);color:#fff}
+.bdanger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-ln)}
+.bghost{background:transparent;color:var(--text2)}
+.bsm{min-height:36px;padding:0 12px;font-size:13px;border-radius:10px}
+.bfull{width:100%}
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text2);flex-shrink:0}
+.icon-btn svg{width:18px;height:18px}
+.icon-btn.danger:hover{color:var(--danger);border-color:var(--danger-ln);background:var(--danger-bg)}
+
+.field{display:block;margin-bottom:12px}
+.field>span{display:block;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.input{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);font-size:16px;font-weight:600;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+.input:focus{border-color:#93C5FD;box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.input::placeholder{color:#94A3B8;font-weight:500}
+.input.invalid{border-color:var(--danger-ln);box-shadow:0 0 0 3px rgba(220,38,38,.1)}
+textarea.input{min-height:64px;resize:vertical;font-size:15px;font-weight:500;line-height:1.4}
+select.input{background-image:linear-gradient(45deg,transparent 50%,#64748B 50%),linear-gradient(135deg,#64748B 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+.hint{font-size:12px;font-weight:600;margin:-6px 0 10px;min-height:0}
+.hint.ok{color:var(--ok)}.hint.err{color:var(--danger)}.hint.info{color:var(--text3)}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
+.seg button{min-height:40px;border:0;border-radius:10px;background:transparent;font-weight:700;font-size:13px;color:var(--text3)}
+.seg button.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 4px rgba(15,23,42,.1)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;background:var(--cb,var(--sunk));color:var(--c,var(--text2));border:1px solid var(--cl,var(--line));white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--c);flex-shrink:0;display:inline-block}
+
+/* ---------- números de resumo ---------- */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--surface);border-radius:var(--r-sm);box-shadow:var(--sh);padding:10px 6px;text-align:center;border:0;display:block;width:100%}
+.stat b{display:block;font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--c,var(--text))}
+.stat span{display:block;font-size:11px;font-weight:700;color:var(--text3);margin-top:2px}
+button.stat:hover{box-shadow:var(--sh),0 0 0 2px var(--blue-m)}
+
+/* ---------- registro: escolher máquina ---------- */
+.line-block{margin-bottom:14px}
+.line-name{font-size:12px;font-weight:800;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.line-name::after{content:"";flex:1;height:1px;background:var(--line)}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px}
+.mb{position:relative;aspect-ratio:1/1;min-height:54px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:border-color .12s,background .12s}
+.mb:hover{border-color:var(--blue-m)}
+.mb.sel{border-color:var(--blue);background:var(--blue-l);color:var(--blue-d);box-shadow:0 0 0 3px rgba(37,99,235,.18)}
+.mb .sides{display:flex;gap:3px}
+.mb .sides i{width:14px;height:5px;border-radius:3px;background:var(--line)}
+.mb .sides i.ok{background:var(--ok)}
+.mb .sides i.par{background:#EA580C}
+.side-dock{position:sticky;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));z-index:20;margin:14px -6px -6px;padding:10px;background:var(--navy);border-radius:16px;box-shadow:var(--sh-lg)}
+.side-dock-h{display:flex;align-items:baseline;gap:8px;color:#fff;margin:0 2px 8px}
+.side-dock-h b{font-size:15px;font-weight:800}
+.side-dock-h span{font-size:12px;color:var(--navy-muted);font-weight:600}
+.side-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side-btn{min-height:64px;border-radius:12px;border:1.5px solid transparent;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:800;font-size:16px}
+.side-btn small{font-size:12px;font-weight:600;color:var(--text3)}
+.side-btn:not(:disabled):hover{border-color:var(--blue);color:var(--blue)}
+.side-btn:disabled{opacity:.45;cursor:not-allowed}
+.pick-hint{font-size:13px;color:var(--text3);text-align:center;margin-top:10px}
+
+/* ---------- registro: sessão ---------- */
+.sess-top{position:sticky;top:var(--top-h,56px);z-index:30;background:var(--bg);margin:-14px -14px 0;padding:10px 14px 0}
+.sess-bar{display:flex;align-items:center;gap:10px;background:var(--navy);color:#fff;border-radius:var(--r);padding:10px 12px;margin-bottom:12px}
+.sess-bar .icon-btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.14);color:#fff}
+.sess-bar b{display:block;font-size:16px;font-weight:800}
+.sess-bar span{display:block;font-size:12px;color:var(--navy-muted);font-weight:600}
+.strip{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:4px;scrollbar-width:thin}
+.chip-st{flex:0 0 auto;min-width:52px;height:52px;border-radius:12px;border:1.5px solid var(--cl);background:var(--cb);color:var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:15px;line-height:1}
+.chip-st small{font-family:Inter,sans-serif;font-size:10px;font-weight:700;margin-top:3px;opacity:.9;max-width:48px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip-st.cur{border-color:var(--blue);background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+.chip-st.add{border-style:dashed;background:transparent;color:var(--text3);border-color:#CBD5E1}
+
+/* ---------- formulário de estação ---------- */
+.form-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.st-title{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.st-title .mono{font-size:20px}
+#editBody .st-title,#editBody .st-title .mono{font-size:18px}
+.form-h .grow{min-width:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.size-field{width:100%;min-height:46px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-family:var(--mono);font-size:18px;font-weight:700;text-align:left}
+.size-field.is-empty{font-family:Inter,sans-serif;font-size:15px;font-weight:500;color:#94A3B8}
+.size-field svg{width:16px;height:16px;color:var(--text3)}
+.tipo-line{font-size:12px;font-weight:600;color:var(--text3);margin:-4px 0 12px}
+.tipo-line b{color:var(--blue-d)}
+.sug{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}
+.sug button{min-height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--sunk);font-size:12px;font-weight:700;color:var(--text2)}
+.sug button:hover,.sug button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.ferr{margin-bottom:12px}
+.ferr .seg{margin-bottom:0}
+.obs-toggle{border:0;background:none;color:var(--blue);font-weight:700;font-size:13px;padding:4px 0;margin-bottom:10px}
+.para-title{font-size:12px;font-weight:700;color:var(--text2);margin:6px 0 6px}
+.para-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:6px;margin-bottom:14px}
+.pbtn{min-height:44px;border-radius:var(--r-sm);border:1.5px solid var(--line);background:var(--sunk);font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 8px}
+.pbtn:hover{border-color:var(--cl);color:var(--c);background:var(--cb)}
+.pbtn.on{border-color:var(--c);background:var(--cb);color:var(--c)}
+.para-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px;border-radius:var(--r-sm);background:var(--cb);border:1.5px solid var(--cl);color:var(--c);font-weight:800;margin-bottom:12px}
+.para-banner .grow{font-size:15px}
+.para-banner small{display:block;font-weight:600;font-size:12px;opacity:.85}
+.form-actions{display:flex;gap:8px;flex-wrap:wrap}
+.form-actions .bp{flex:1}
+.kbd-hint{font-size:11px;color:var(--text3);margin-top:8px;text-align:center}
+
+/* ---------- consulta / grupos ---------- */
+.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.filters .input{min-height:42px;font-size:15px;padding:8px 10px}
+.fchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.fchip{min-height:34px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;color:var(--text2);display:inline-flex;align-items:center;gap:6px}
+.fchip .dot{width:7px;height:7px}
+.fchip b{font-family:var(--mono);font-weight:700}
+.fchip.on{border-color:var(--c);background:var(--cb);color:var(--c)}
+.fchip.clear{border-style:dashed;color:var(--text3)}
+.results-lbl{font-size:12px;font-weight:600;color:var(--text3);margin:-4px 0 10px}
+
+.lgroup{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:14px;overflow:hidden}
+.lgroup-h{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--navy);color:#fff;border:0;width:100%;text-align:left}
+.lgroup-h b{font-size:14px;font-weight:800}
+.lgroup-h span{font-size:12px;color:var(--navy-muted);font-weight:600}
+.lgroup-h svg{width:16px;height:16px;margin-left:auto;transition:transform .2s;color:var(--navy-muted)}
+.lgroup.closed .lgroup-h svg{transform:rotate(-90deg)}
+.lgroup.closed .lgroup-b{display:none}
+.lgroup-b{padding:12px}
+.mcard{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.mcard:last-child{margin-bottom:0}
+.mcard-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.mcard-h h3{font-size:16px;font-weight:800}
+.mcard-h .badges{display:flex;gap:5px;flex-wrap:wrap}
+.side-lbl{font-size:12px;font-weight:800;color:var(--blue-d);margin:4px 0 6px;display:flex;align-items:center;gap:8px}
+.side-lbl::after{content:"";flex:1;height:1px;background:var(--line)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.tile{position:relative;text-align:left;border:1.5px solid var(--cl);background:var(--cb);border-radius:12px;padding:8px 10px 9px;min-height:80px;display:flex;flex-direction:column;gap:2px;transition:border-color .12s,transform .12s}
+.tile:hover{border-color:var(--c)}
+.tile .t-top{display:flex;align-items:center;justify-content:space-between;gap:4px;font-size:11px;font-weight:700;color:var(--text3)}
+.tile .t-top .mono{font-size:12px;color:var(--text2)}
+.tile .t-tag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.75);color:var(--c)}
+.tile .t-art{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text);line-height:1.15}
+.tile .t-sz{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text)}
+.tile .t-cor{font-size:12px;font-weight:600;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile .t-para{font-size:14px;font-weight:800;color:var(--c)}
+.tile .t-flags{display:flex;gap:4px;margin-top:auto;padding-top:3px;flex-wrap:wrap}
+.flag{font-size:10px;font-weight:800;padding:1px 6px;border-radius:5px;background:#fff;border:1px solid var(--line);color:var(--text2)}
+.flag.trc{color:var(--warn);border-color:var(--warn-ln);background:var(--warn-bg)}
+.flag.obs{color:var(--blue-d);border-color:var(--blue-m);background:var(--blue-l)}
+
+.empty{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty h3{font-size:15px;font-weight:800;color:var(--text2);margin-bottom:4px}
+.empty p{font-size:13px;margin-bottom:14px}
+
+/* ---------- layout físico ---------- */
+
+/* ---------- QR ---------- */
+.qr-box{display:flex;justify-content:center;align-items:center;min-height:260px;background:#fff;border-radius:14px;border:1px solid var(--line);padding:14px;margin:10px 0}
+.qr-box img,.qr-box canvas{display:block;max-width:100%;height:auto}
+.qr-parts{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:6px}
+.qr-payload{font-family:var(--mono);font-size:11px;color:var(--text3);word-break:break-all;max-height:64px;overflow:auto;text-align:center}
+.qr-quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;max-height:320px;overflow:auto}
+.qr-quick button{min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--sunk);font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text2)}
+.qr-quick button:hover{border-color:var(--blue);color:var(--blue)}
+.scan-wrap{position:relative;border-radius:var(--r);overflow:hidden;background:#0B1220;aspect-ratio:3/4;max-height:62vh;margin-bottom:12px}
+.scan-wrap video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-frame{position:absolute;inset:18% 14%;border:3px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 999px rgba(11,18,32,.45);pointer-events:none}
+.scan-msg{position:absolute;left:0;right:0;bottom:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff;font-weight:700;font-size:14px;text-align:center}
+.scan-idle{position:absolute;inset:0;display:grid;place-items:center;color:#CBD5E1;font-weight:700;text-align:center;padding:20px}
+.part-dots{display:flex;gap:5px;justify-content:center;margin-top:6px}
+.part-dots i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.3)}
+.part-dots i.got{background:#4ADE80}
+
+/* ---------- dados ---------- */
+.exp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.exp{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);border:0;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:96px}
+.exp:hover{box-shadow:var(--sh),0 0 0 2px var(--blue-m)}
+.exp .ex-i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--blue-l);color:var(--blue);margin-bottom:4px}
+.exp .ex-i svg{width:18px;height:18px}
+.exp b{font-size:14px;font-weight:800}
+.exp span{font-size:12px;color:var(--text3);font-weight:500;line-height:1.35}
+.exp.wide{grid-column:1/-1}
+.exp.danger .ex-i{background:var(--danger-bg);color:var(--danger)}
+.exp.danger b{color:var(--danger)}
+.section-t{font-size:15px;font-weight:800;margin:6px 0 10px}
+.hist{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.hi{display:flex;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line2)}
+.hi:last-child{border-bottom:0}
+.hi .dot{margin-top:6px}
+.hi b{display:block;font-size:13px;font-weight:700}
+.hi span{display:block;font-size:12px;color:var(--text2)}
+.hi time{display:block;font-size:11px;color:var(--text3);font-weight:600;margin-top:2px}
+
+/* ---------- folhas (modais) ---------- */
+.sheet-wrap{position:fixed;inset:0;z-index:300;background:rgba(11,31,58,.5);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .18s}
+.sheet-wrap.open{opacity:1;pointer-events:auto}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:10px 16px calc(18px + env(safe-area-inset-bottom));transform:translateY(24px);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.sheet-wrap.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+.sheet-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sheet-h h2{font-size:17px}
+.size-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.size-btn{min-height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--sunk);font-family:var(--mono);font-size:17px;font-weight:700;color:var(--text2)}
+.size-btn:not(:disabled):hover{border-color:var(--blue);color:var(--blue)}
+.size-btn:disabled{opacity:.3;cursor:not-allowed}
+.size-btn.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+.size-btn.grp{grid-column:span 2;background:#EEF2FF;border-color:#A5B4FC;color:#3730A3}
+.size-btn small{display:block;font-family:Inter,sans-serif;font-size:10px;font-weight:700;opacity:.8}
+.size-btn.grp.sel{background:#4F46E5;border-color:#4F46E5;color:#fff}
+.size-note{font-size:13px;color:var(--text2);margin-bottom:12px}
+.dlg{max-width:440px}
+.dlg p{font-size:14px;color:var(--text2);margin-bottom:14px;line-height:1.5}
+.dlg .dlg-actions{display:flex;flex-direction:column;gap:8px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;font-weight:600;margin-bottom:14px;color:var(--text2)}
+.check input{width:20px;height:20px;margin-top:1px;accent-color:var(--blue)}
+
+/* ---------- cadastro de moldes ---------- */
+.cad-card p{font-size:13px;color:var(--text2);margin-bottom:6px}
+.cad-card p b{color:var(--text)}
+.cad-note{font-size:12px;border-radius:10px;padding:8px 10px;margin:4px 0 10px;background:var(--blue-l);color:var(--blue-d);font-weight:600}
+.cad-note.warn{background:var(--warn-bg);color:var(--warn)}
+.cad-note details summary{cursor:pointer}
+.cad-note ul{margin:6px 0 0 16px;font-weight:500}
+.cad-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cad-actions .btn{flex:1 1 140px}
+.cad-sheet{max-width:640px}
+.cad-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;max-height:58vh;overflow-y:auto}
+.cad-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:0;border-top:1px solid var(--line2);background:var(--surface);text-align:left;width:100%}
+.cad-row:first-child{border-top:0}
+.cad-row:hover{background:var(--sunk)}
+.cad-row b{font-family:var(--mono);font-size:15px;min-width:56px}
+.cad-row span{flex:1;font-size:12px;color:var(--text3);font-weight:600}
+.cad-row span.none{color:var(--warn)}
+.cad-row svg{width:16px;height:16px;color:var(--text3);transform:rotate(-90deg)}
+.cad-help{font-size:12px;color:var(--text3);margin:-4px 0 12px;line-height:1.45}
+.cad-err{background:var(--danger-bg);border:1px solid var(--danger-ln);color:var(--danger);border-radius:10px;padding:8px 10px;font-size:12px;font-weight:600;margin-bottom:12px}
+.cad-prev{background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:14px}
+.cad-prev>span{display:block;font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.cad-prev .size-grid{margin:0;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+.cad-prev .size-btn{min-height:40px;font-size:14px;cursor:default;display:flex;flex-direction:column;align-items:center;justify-content:center;grid-column:auto}
+#ceCores{text-transform:uppercase}
+.cad-prev .size-btn small{display:block;font-size:9px;font-weight:700;font-family:Inter,sans-serif;opacity:.75}
+.linkbtn{border:0;background:none;color:var(--blue);font-weight:800;text-decoration:underline;padding:0 2px;font-size:12px}
+
+/* ---------- ordem das máquinas ---------- */
+.ord-line{border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.ord-line-h{background:var(--navy);color:#fff;font-weight:800;font-size:13px;padding:8px 12px;display:flex;justify-content:space-between}
+.ord-line-h span{color:var(--navy-muted);font-weight:600;font-size:12px}
+.ord-row{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 12px;border-top:1px solid var(--line2)}
+.ord-row:first-of-type{border-top:0}
+.ord-pos{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text3);width:20px}
+.ord-row b{flex:1;font-size:15px;font-weight:800;white-space:nowrap;min-width:0}
+.ord-row .icon-btn{width:38px;height:38px}
+.ord-row .icon-btn:disabled{opacity:.3}
+.ord-row select{min-height:38px;padding:4px 26px 4px 8px;font-size:13px;font-weight:700;width:auto;max-width:112px}
+.ord-row.moved{background:var(--blue-l)}
+.ord-empty{padding:10px 12px;font-size:12px;color:var(--text3)}
+
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;top:calc(var(--top-h,56px) + 10px);transform:translate(-50%,-12px);z-index:400;background:var(--navy);color:#fff;border-radius:14px;padding:10px 12px 10px 16px;display:flex;align-items:center;gap:12px;font-weight:600;font-size:14px;box-shadow:var(--sh-lg);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:calc(100vw - 24px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast button{pointer-events:auto}
+.toast.err{background:var(--danger)}
+.toast button{border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:9px;min-height:34px;padding:0 12px;font-weight:800;font-size:13px}
+
+/* ---------- telas maiores ---------- */
+@media (min-width:600px){
+  .tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stat b{font-size:26px}
+  .input{font-size:15px}
+}
+@media (min-width:900px){
+  .side-dock{bottom:16px}
+  body{padding-left:92px}
+  .top{padding-left:24px;padding-right:24px}
+  .nav{top:0;right:auto;bottom:0;width:92px;flex-direction:column;justify-content:flex-start;gap:6px;padding:74px 10px 16px;background:var(--navy);border:0;backdrop-filter:none}
+  .ni{flex:0 0 auto;min-height:64px;color:var(--navy-muted)}
+  .ni:hover{background:rgba(255,255,255,.06);color:#fff}
+  .ni.active{background:rgba(59,130,246,.28);color:#fff}
+  main{padding:22px 28px 48px}
+  .toast{margin-left:46px}
+  .sheet-wrap{align-items:center}
+  .sheet{border-radius:20px;padding-bottom:20px}
+  .grab{display:none}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .filters{max-width:720px}
+  #regForm{max-width:820px}
+  #regSession .sess-top{margin:-22px -28px 0;padding:14px 28px 0}
+  .exp-grid{grid-template-columns:repeat(3,1fr)}
+  .qr-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+}
+@media (max-width:360px){
+  main{padding-left:10px;padding-right:10px}
+  .stats{gap:6px}.stat b{font-size:19px}
+  .filters{grid-template-columns:1fr}
+  .size-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" fill="#fff"/><rect x="13" y="3" width="8" height="8" rx="2" fill="#fff" opacity=".7"/><rect x="3" y="13" width="8" height="8" rx="2" fill="#fff" opacity=".7"/><rect x="13" y="13" width="8" height="8" rx="2" fill="#BFDBFE"/></svg></div>
+    <div><b>Monitor</b><span>Vulcanização</span></div>
+  </div>
+  <div class="top-right">
+    <span class="save-err" id="saveErr" hidden>Não salvou no aparelho</span>
+    <span class="hdate" id="hdate"></span>
+  </div>
+</header>
+
+<nav class="nav" aria-label="Menu principal">
+  <button class="ni active" data-page="registro"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg><span>Registro</span></button>
+  <button class="ni" data-page="consulta"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><span>Consulta</span></button>
+  <button class="ni" data-page="layout"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 4h16v4H4zM4 10h7v10H4zM13 10h7v10h-7z"/></svg><span>Layout</span></button>
+  <button class="ni" data-page="qrcode"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM17 17h3v3h-3z"/></svg><span>QR</span></button>
+  <button class="ni" data-page="exportar"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg><span>Dados</span></button>
+</nav>
+
+<main>
+  <!-- REGISTRO -->
+  <section class="page active" id="page-registro">
+    <div id="regPick">
+      <div class="stats" id="regStats"></div>
+      <button class="btn bp bfull" id="continueBtn" data-act="continue" hidden style="margin-bottom:12px"></button>
+      <div class="card">
+        <div class="card-h"><h2>Escolha a máquina</h2><span class="sub" id="pickLbl"></span></div>
+        <div id="machineGrid"></div>
+        <p class="pick-hint" id="pickHint">Toque numa máquina e depois no lado para começar.</p>
+        <div class="side-dock" id="sidePick" hidden>
+          <div class="side-dock-h"><b id="sidePickLbl"></b><span>escolha o lado</span></div>
+          <div class="side-pick">
+            <button class="side-btn" data-act="start" data-side="A" id="sideA">Lado A<small>—</small></button>
+            <button class="side-btn" data-act="start" data-side="B" id="sideB">Lado B<small>—</small></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="regSession" hidden></div>
+  </section>
+
+  <!-- CONSULTA -->
+  <section class="page" id="page-consulta">
+    <div class="stats" id="cStats"></div>
+    <div class="filters">
+      <input class="input" id="cArt" placeholder="Artigo" inputmode="numeric" autocomplete="off" data-filter="c">
+      <input class="input" id="cCor" placeholder="Cor" autocomplete="off" autocapitalize="characters" spellcheck="false" data-filter="c" data-upper>
+      <input class="input" id="cTam" placeholder="Tamanho" inputmode="numeric" autocomplete="off" data-filter="c">
+    </div>
+    <div class="fchips" id="cChips"></div>
+    <div class="results-lbl" id="cResults"></div>
+    <div id="cList"></div>
+  </section>
+
+  <!-- LAYOUT -->
+  <section class="page" id="page-layout">
+    <div class="gl-cards" id="lStats"></div>
+    <div class="filters">
+      <input class="input" id="lArt" placeholder="Artigo" inputmode="numeric" autocomplete="off" data-filter="l">
+      <input class="input" id="lCor" placeholder="Cor" autocomplete="off" autocapitalize="characters" spellcheck="false" data-filter="l" data-upper>
+      <input class="input" id="lTam" placeholder="Tamanho" inputmode="numeric" autocomplete="off" data-filter="l">
+    </div>
+    <div class="fchips" id="lChips"></div>
+    <div class="row" style="margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn bp" data-act="print"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Imprimir layout</button>
+      <button class="btn bo" data-act="ordOpen"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M7 4v16M4 7l3-3 3 3M17 20V4M14 17l3 3 3-3"/></svg>Ordem das máquinas</button>
+    </div>
+    <div id="layoutContent"></div>
+  </section>
+
+  <!-- QR -->
+  <section class="page" id="page-qrcode">
+    <div class="seg" style="max-width:420px">
+      <button class="active" data-act="qrMode" data-mode="gen" id="qrModeGen">Mostrar QR</button>
+      <button data-act="qrMode" data-mode="scan" id="qrModeScan">Ler QR</button>
+    </div>
+
+    <div id="qrGen" class="qr-cols">
+      <div class="card">
+        <div class="seg">
+          <button class="active" data-act="qrShare" data-mode="all" id="qrShareAll">Estações</button>
+          <button data-act="qrShare" data-mode="st" id="qrShareSt">Uma estação</button>
+          <button data-act="qrShare" data-mode="cad" id="qrShareCad">Moldes e cores</button>
+        </div>
+        <p class="sub" id="qrHelp"></p>
+        <div id="qrStSel" hidden>
+          <div class="row" style="margin-top:10px">
+            <label class="field grow"><span>Máquina</span><select class="input" id="qrMaq"></select></label>
+            <label class="field grow"><span>Lado</span><select class="input" id="qrLado"><option>A</option><option>B</option></select></label>
+            <label class="field grow"><span>Estação</span><select class="input" id="qrEst"></select></label>
+          </div>
+        </div>
+        <div class="qr-box" id="qrBox"></div>
+        <div class="qr-parts" id="qrPartNav" hidden>
+          <button class="icon-btn" data-act="qrPart" data-d="-1" aria-label="Parte anterior"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <b class="mono" id="qrPartLbl">1 / 1</b>
+          <button class="icon-btn" data-act="qrPart" data-d="1" aria-label="Próxima parte"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+        <p class="sub" id="qrInfo" style="text-align:center;margin-bottom:6px"></p>
+        <div class="qr-payload" id="qrPayload"></div>
+      </div>
+      <div class="card" id="qrQuickCard" hidden>
+        <div class="card-h"><h2>Estações registradas</h2><span class="sub">toque para mostrar o QR</span></div>
+        <div class="qr-quick" id="qrQuick"></div>
+      </div>
+    </div>
+
+    <div id="qrScan" hidden style="max-width:520px">
+      <div class="seg">
+        <button class="active" data-act="qrRecv" data-mode="st" id="qrRecvSt">Importar estações</button>
+        <button data-act="qrRecv" data-mode="cad" id="qrRecvCad">Importar moldes e cores</button>
+      </div>
+      <p class="sub" id="qrRecvHelp" style="margin:-4px 0 10px"></p>
+      <div class="scan-wrap">
+        <video id="qrVideo" playsinline muted></video>
+        <div class="scan-frame" id="scanFrame" hidden></div>
+        <div class="scan-idle" id="scanIdle">Câmera desligada</div>
+        <div class="scan-msg" id="scanMsg" hidden></div>
+      </div>
+      <div class="row">
+        <button class="btn bp grow" data-act="scanStart" id="scanStartBtn">Ligar câmera</button>
+        <button class="btn bo grow" data-act="scanStop" id="scanStopBtn" hidden>Desligar</button>
+        <button class="btn bo" data-act="scanSwitch" id="scanSwitchBtn" hidden>Trocar câmera</button>
+      </div>
+      <p class="sub" style="margin-top:12px;text-align:center">O app reconhece sozinho o tipo de QR lido. No computador a câmera costuma não estar disponível: use “Mostrar QR” no PC e leia pelo celular.</p>
+    </div>
+  </section>
+
+  <!-- DADOS -->
+  <section class="page" id="page-exportar">
+    <h2 class="section-t">Enviar e guardar</h2>
+    <div class="exp-grid">
+      <button class="exp wide" data-act="install" id="installCard" hidden><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v7M9 11l3 3 3-3"/></svg></span><b>Instalar como app neste celular</b><span>Ícone na tela inicial, abre em tela cheia e funciona sem internet.</span></button>
+      <button class="exp wide" data-act="expHTML"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v14"/></svg></span><b>Compartilhar app com os dados</b><span>Gera um arquivo .html com tudo dentro. Quem abrir escolhe se usa, mescla ou ignora os dados.</span></button>
+      <button class="exp" data-act="expJSON"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span><b>Backup (.json)</b><span>Cópia completa, com histórico e observações</span></button>
+      <button class="exp" data-act="expCSV"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></span><b>Planilha (.csv)</b><span>Situação atual das estações, abre no Excel</span></button>
+      <button class="exp" data-act="expEvents"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><b>Trocas 24h (.csv)</b><span>Trocas, paradas e retomadas do último dia</span></button>
+      <button class="exp" data-act="pickJSON"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></svg></span><b>Restaurar backup</b><span>Abrir um .json exportado pelo Monitor</span></button>
+      <button class="exp" data-act="pickCSV"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></svg></span><b>Importar planilha</b><span>.csv no mesmo formato da exportação</span></button>
+      <button class="exp danger" data-act="clearAll"><span class="ex-i"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg></span><b>Limpar máquinas</b><span>Apaga as estações deste aparelho</span></button>
+    </div>
+    <input type="file" id="jsonInput" accept=".json,application/json" hidden>
+    <input type="file" id="csvInput" accept=".csv,text/csv,text/plain" hidden>
+    <h2 class="section-t">Cadastro de moldes</h2>
+    <div class="card cad-card">
+      <div id="cadInfo"></div>
+      <div class="cad-actions">
+        <button class="btn bp" data-act="cadOpen"><svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar cadastro</button>
+        <button class="btn bo" data-act="cadCsvOut">Baixar planilha</button>
+        <button class="btn bo" data-act="cadCsvIn">Importar planilha</button>
+      </div>
+      <button class="btn bghost bsm" data-act="cadRevert" id="cadRevert" hidden style="margin-top:8px">Voltar ao cadastro do arquivo</button>
+    </div>
+    <input type="file" id="cadCsvInput" accept=".csv,text/csv,text/plain" hidden>
+    <div class="row" style="justify-content:space-between;flex-wrap:wrap">
+      <h2 class="section-t">Histórico</h2>
+    </div>
+    <div class="fchips" id="hChips"></div>
+    <div class="hist" id="histList"></div>
+    <button class="btn bo bfull" id="histMore" data-act="histMore" hidden style="margin-top:10px">Mostrar mais</button>
+  </section>
+</main>
+
+<!-- folha: editar estação -->
+<div class="sheet-wrap" id="editSheet" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="grab"></div>
+    <div id="editBody"></div>
+  </div>
+</div>
+
+<!-- folha: tamanho -->
+<div class="sheet-wrap" id="sizeSheet" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sizeTitle">
+    <div class="grab"></div>
+    <div class="sheet-h"><h2 class="grow" id="sizeTitle">Tamanho</h2><button class="icon-btn" data-act="sizeClose" aria-label="Fechar"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <p class="size-note" id="sizeNote"></p>
+    <div class="size-grid" id="sizeGrid"></div>
+    <button class="btn bo bfull" data-act="sizeClear">Limpar tamanho</button>
+  </div>
+</div>
+
+<!-- folha: cadastro de moldes -->
+<div class="sheet-wrap" id="cadSheet" aria-hidden="true">
+  <div class="sheet cad-sheet" role="dialog" aria-modal="true" aria-labelledby="cadTitle">
+    <div class="grab"></div>
+    <div id="cadBody"></div>
+  </div>
+</div>
+
+<!-- folha: ordem das máquinas -->
+<div class="sheet-wrap" id="ordSheet" aria-hidden="true">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ordTitle">
+    <div class="grab"></div>
+    <div class="sheet-h"><h2 class="grow" id="ordTitle">Ordem das máquinas</h2><button class="icon-btn" data-act="ordCancel" aria-label="Fechar"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <p class="size-note">Use as setas para mudar a posição dentro da linha, ou troque a máquina de linha. Vale para o Registro, a Consulta, o Layout e a impressão.</p>
+    <div id="ordBody"></div>
+    <div class="form-actions" style="margin-top:14px">
+      <button class="btn bghost" data-act="ordReset">Voltar ao padrão</button>
+      <button class="btn bp" data-act="ordSave">Salvar ordem</button>
+    </div>
+  </div>
+</div>
+
+<!-- diálogo genérico -->
+<div class="sheet-wrap" id="dlg" aria-hidden="true">
+  <div class="sheet dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="grab"></div>
+    <h2 id="dlgTitle" style="margin-bottom:8px"></h2>
+    <div id="dlgBody"></div>
+    <div class="dlg-actions" id="dlgActions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
+<datalist id="colorHints"></datalist>
+<canvas id="qrCanvas" hidden></canvas>
+<!--
+================================================================================
+  CADASTRO DE MOLDES  —  pode editar aqui mesmo, num editor de texto (Bloco de Notas)
+================================================================================
+  Uma linha por artigo, colunas separadas por  |  (barra vertical):
+
+      ARTIGO | SIMPLES | DUPLO | DUPLO MISTO | CORES
+
+  - Tamanhos separados por espaço. Ex.: 36 37 38
+  - Dois tamanhos no mesmo molde: junte com barra. Ex.: 34/35
+  - O mesmo tamanho pode estar num par e também sozinho:
+    34/35 e 35 na mesma linha são DOIS moldes diferentes
+  - Cores separadas por vírgula. Ex.: PT/PTG, NAT/NT
+  - Coluna vazia pode ficar em branco. Linha começando com # é ignorada.
+  - Não precisa alinhar as colunas; o app aceita espaços a mais ou a menos.
+
+  Mais fácil: pelo próprio app, em  Dados › Cadastro de moldes
+  (dá para editar ali ou baixar/importar como planilha do Excel).
+================================================================================
+-->
+<script type="text/plain" id="cadastroMoldes" data-atualizado="2026-09-29">
+ARTIGO | SIMPLES                                            | DUPLO                            | DUPLO MISTO                               | CORES
+40061  | 33 34 35 36 37 38 39 40                            |                                  |                                           |
+40395  | 40                                                 |                                  |                                           |
+40465  | 33 34 35 36 37 38 39 40 41 42 43 44                |                                  |                                           |
+40515  | 33 34 35 36 37 38 39 40 41 42 43 44 46 48          |                                  |                                           |
+40531  | 35 36 37 38 39 42                                  | 40 41                            | 33/34 43/44 45/46                         |
+40533  | 33 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40535  | 33 34 35 36 37 38 39 40 41 42 43 44 45             |                                  |                                           |
+40536  | 33 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40537  | 33 35 36 37 38 39 40 41 42 43 45                   |                                  |                                           |
+40543  | 33 35 36 37 38 39 40 41 42 43                      |                                  |                                           |
+40546  | 33 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40552  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40553  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40556  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40557  | 38 39 40 41 42 43 44                               |                                  |                                           |
+40558  | 38 39 40 41 42 43 44                               |                                  |                                           |
+40562  | 38 39 40 41 42 43 44                               |                                  |                                           |
+40563  | 38 39 40 41 42 43 44                               |                                  |                                           |
+40564  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40566  | 33 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40567  | 33 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40573  | 45                                                 | 36 37 38 39 40 41 42             | 34/35 43/44                               | ELDPAG, PT/SLM, PG/GRE, PT/PTG
+40574  | 36 37 38 39 40 41 42 43 44 45 46 47 48             |                                  |                                           |
+40580  | 33 35 36 37 38 39                                  | 40 41 42                         |                                           |
+40587  | 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48    |                                  |                                           |
+40588  | 34 36 37 38 39 40 41 42 43 45 47                   |                                  |                                           | PT/PTG, QH/RSC, MH7/AL, PT/SUN, PT/DAL
+40594  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | PTOPTO, HEA/HE, PTO/PL, MGRMGR, MH7MH7
+40595  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTOMOB, MH7PE7, PTO/CD, PT/PTG, PT/SCI, PT/CN2
+40609  | 34 35 36 37 38 39 42 43 44                         | 40 41                            |                                           | MH7DAL, PTOCRC, PE7PE7, PTOGLD, PTOPTO
+40611  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | AMARLS, VANGDA, MRINH7, PRETO
+40612  | 39 40 41 42 43 44 45 46 47 48                      |                                  |                                           |
+40613  | 28 30 32                                           |                                  |                                           |
+40614  | 36 37 38 39 40 41 42 43 44 45 46 47 48             |                                  |                                           |
+40615  | 34 36 37 38 39 40 41 42 43 44                      |                                  |                                           |
+40616  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTO/PL, NAT/NT, PT/PTG, CZ15PS
+40617  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40618  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40619  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           | PTOPTO, PE7/AZ, WHT/WH, PT/LJC, IG/AML, VL8/SF
+40620  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           | CNOUR2
+40625  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           | PT/LJC, MH7/WF, PT/PTG, ECL/NL, MH7/VC, PG/CRL, PTONAT
+40630  | 34 35 42 43 44                                     | 36 37 38 39 40 41                |                                           | PT/PTL, MH7/CD, NAT/PT, NAT/EB, CUR/VR
+40633  |                                                    | 36 37 38 39                      | 34/35 40/41                               | PRETO, AMLLMO, AZALEI, VANGDA, ROSERD, OLYMPN, STONE
+40638  | 36 39 40 41 42                                     | 38                               | 34/35 43/44                               | SAFRON, PRETO, CRP/03
+40643  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           | FG/APC
+40645  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40646  | 34 36 37 38 39                                     |                                  |                                           |
+40650  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTO/PT, PTOPRG, MH/MH7, PTO/PG, PT/ROR
+40651  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40653  | 34 39 41                                           | 36 37 38                         |                                           |
+40659  | 36 37 38 39                                        | 40 41 42 43/44                   | 28/29 30/31 32/33 34/35                   | INGRED, NTURAL, PRETO, MRINH7, PTRL07, AZALEI, STONE
+40662  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44 45/46                         | PTPTPG, PTPTC2, PTPTPT, NTNTPP, PTPTVC, PGPGPG, ELELDA, PT2IGR, PTPTD2, PGPGPE, PT2V20, PTPTCO, PTPTPL, PTO/TO, PTPTAL, M7M7GG, M7M7PA, PTOCRC
+40663  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40664  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40665  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40666  |                                                    | 36 37 38 39 40 41 42             | 34/35 43/44                               | NATRAL, CZA015, VANGDA, PRETO
+40668  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           | PT/PTG, PTDMSC, PTOCRC
+40671  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | BRANCO, ARENIT
+40675  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40676  | 34 36 37 38 39 40                                  |                                  |                                           |
+40682  | 34 36 37 38 39 40                                  |                                  |                                           |
+40684  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40685  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PT/CN2, MH7MH7, PTO/AA, MH7PE7, PTOPTR, NAT/NT, PT/PTG, PT/0MO, AGABLA, PT/VMC, PT/CRL, PLX/PP, MH7/VC, PT/BKN
+40686  | 34 37 43 44                                        | 35 36 38 39 40 41 42             |                                           | PTO/LJ, SO/SAV, EC/AMA, PTO/LL, BOB/EB, NT/CN2, SIG/LL
+40687  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PT/MH7, PT/IGR, PGR/NL, PT/PTG, PT/ECL, PTOPTR, PTO/PN, PTOPTO, PTR7PT
+40689  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           | PG/PTO, PTO/PT, VGD/PT
+40692  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTO/PT, LM/LML, NAT/NT, PT/NAT
+40693  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTPTGH, STSTEB, STSTVB, PTPTAZ, AZAZNL
+40698  | 36                                                 | 37 38                            | 34/35 39/40                               | PTO/AL, PRPPRP, PUHPUH, NTND15, PTO/BP, NAT/NT
+40699  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PT/PTG, PT/LML, NAT/NT
+40700  | 35 36 37 38 39 40 41 42 43 44 45 46 47 48          |                                  |                                           | NT/PTO, NT/VBL, OR3BRI, MH7VMC, AML/PT, JM/STO
+40704  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40707  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40709  | 34 36 37 38 39 40 41 42 43                         |                                  |                                           |
+40711  | 34 35 36 37 38 39 40 41                            |                                  |                                           |
+40715  | 35/36 37/38 39/40 41/42                            | 43/44                            | 33/34 45/46                               | PTPTPT, DKMDKM, BGE/NT
+40716  |                                                    | 36 37 38 39 40 41 42 43/44       | 34/35                                     | PTO/PT, NAT/NT, VGDVGD, PTOVRN, PT/GGK, PT/PTL, PT/IGR, NTNT10, NT10EB
+40717  |                                                    | 36 37 38 39 40 41 42 43/44       | 34/35                                     | PTAMLM, NAT/NT, NATHRD, SI/SIM, CRS/VR, CRLCRL, PT/GRH
+40718  | 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 |                                  |                                           | NTURAL
+40719  | 28 29 30 31 32 33 34 35 36 37 38 43 44             | 39 40 41 42                      |                                           | PRETO
+40721  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           |
+40722  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | PT/PRG, NT/ALB, NT/JSM, PT/PGR, NT/VNR
+40723  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PRETO, AZALEI, MODGRA, ECLIPS, NATRAL
+40724  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTOPTO, MH7CE2, PT/PTG, PT/PNF, MH7/PP, PT/IGR, PE7EQB, MRTENB, MARMAR
+40725  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | BRANCO, MARFIM, ARENIT, SUMWHI, MRINH7
+40726  |                                                    | 36 37 38 39 40 41 42 43/44       | 28/29 30/31 32/33 34/35                   | MH7NAT, PTOPTO, NAT/NT, ELDDMS, IGRIGR, PGR/AA, MH7MH7, PT/PEW, PT/PTG, PT/MH7, PT/ST2, PTOCRC, PSCWFL, PTONAT, MR/BWC, PT/GDY, DPGFL2, MH7/EB, PE7SAF, PGRST2
+40727  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PT/CN2, MH7/AA, NT/IGR, PTBD05, PTO/PN, PTONAT, PTOPTO, NAT/NT, PT/VMC
+40728  | 36 37 38 39 40 42                                  | 41                               | 34/35 43/44                               | PTOPTO, PTL/PL, MG/ESM, NAT/NT, DM/CRL, CUR/GH
+40730  | 36 37 38 39 40 41 42 43 44 45                      |                                  |                                           |
+40731  | 36 37 38 39 42                                     | 40 41                            | 28/29 30/31 32/33 34/35 43/44 45/46 47/48 | NAT/NT, PT/PTG, ELDDMS, PT/IGR, MRT/PP, PTONAT, PTOPTO, PT/DAL, PTO/TO, MH7/VC, C15CN2
+40733  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | NAT/NT, PTO/PL, PT/PTG, PT/CN2, PTDMSC, MH7OLY, PT/AMA, NAT/PL
+40735  | 42                                                 | 34/35 36 37 38 39 40 41 43/44    | 28/29 30/31 32/33                         | NAT/NT, PTO/PT, VGDVGD, IR/PE2, PG/PTG
+40736  | 36 37 38 39 40 41 42 43 44 45 46 47 48             |                                  |                                           | BCODOU, PT/PGR, DE2/PT
+40740  | 36 42 45                                           | 37 38 39 40 41                   | 34/35 43/44                               | WS2WS2, PTO/PT, PTAMLM, PT/GRH, NAT/NT, NT/RY3, AZL/MG
+40744  | 36 37 38                                           |                                  | 34/35 39/40                               | EL/PEN, PT/CRL, NAT/NT, MH7MH7, PGR/PN, FL2FL2, MOGAMH, HPKHPK
+40745  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PTONAT, PGYPGY, DM/DMR, CZCZ15, PG/PUZ, PG/RSR, PTOPTO, PTO/MG, PTBD05
+40747  | 36 37 38 39 40 41 42 45                            |                                  | 34/35 43/44                               | NAT/NT
+40748  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | NATRAL, PRETO
+40750  | 28/29 30/31 32/33 36 37 38 39 40 41 42             |                                  | 34/35 43/44                               | PRETO, DAMASC
+40751  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PRETO, MRINH7, PETALA, BOLD, PSAFSH, DALIA, VENRED
+40754  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | MH7/VC, MH7MH7, PTOPTO, MH7/AB, PT/ESM, PTO/AA, FL2/EB, MU8MOG
+40755  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | DAM/DM, NAT/NT, PTOPTO, NEL/NL, PTL/PL, FADFAD, BKNBKN, MH7MH7
+40757  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | BOLD, AMARLS, OMEORA, PRETO, PETALA, AZALEI, PURZES, MRINH7, CAMEL
+40759  |                                                    | 34 35 36 37 38 39 40 41 42 43 44 |                                           | WSK2PL, NT/PET, PPI/PP, OMO/PT, OR3/PG, PT/EQB, NT/MDG
+40760  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | PRETO, NATRAL, PURLUX, MVEPNK
+40761  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | NAT/NT, MJD/PT, AMAAMA, PTO/PT
+40764  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | MH7ALO, PTAMOL, ST2/VR, PTO/PT, BRC/EB, MRT/AL
+40765  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | ST2/VR, MH7ALO, PTO/PT, MDGMDG, PT/VER, PTO/LJ, MRT/AL, DEPDEP, BRC/EB
+40768  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | NTURAL, HUSPNK, MRINH7, PRETO, VANGDA, STONE, VERCHI
+40769  | 43 44                                              | 34/35 36 37 38 39 40 41 42       | 45/46                                     | AZL/AL, AML/AL, PTO/PT, BC2BC2, NATR10, IGRIGR, STOSTO, PT/ALF, SI/SIM, PT/IGR, GGK/GG, PLLPLL
+40773  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | BOUBLU, PRETO, ROYAL3
+40775  | 36 37 38 39 40 41 42                               |                                  | 34/35 43/44                               | MRINH7, PRETO, BOLD, CENOU2, NEOLIM, PAPAIA, OLYMPI
+40778  | 36                                                 | 37 38 39 40 41 42 43/44          | 34/35 45/46 47/48                         | PRETO, NTURAL, CORAL, AMLLMO, MRINH7
+40781  | 36 37 38 39 40 41 42                               |                                  | 34 35 43 44                               | PT/AML, PTO/PT, NTNT10
+40782  | 36 37 38 39 40 41 42 43 44 45                      |                                  |                                           | PRETO, BCO2
+40787  |                                                    | 34/35 36 37 38 39 40 41 42 43/44 |                                           | ALGZEP, NAT/NT, PTAMLM, PTO/SF, PAGRST, MARIDA, BLNPAG, PT/IGR, PT/CUR
+40788  | 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 |                                  |                                           | PRETO, BKT/NY, PITGRA, NTURAL
+40795  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | BKNBKN, MARMAR, PTOPTO, ST2ST2
+40796  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | MH7/IR, PT/IGR, NT10PT, MRT/AL, N10/AT, DG/PAP
+40797  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | CZCZ15, MARMAR, MRTENB, NT/BEG, PT/PTG, PT/VER, PT/VMC, PTOPTO
+40798  | 34 35 36 37 38 39 40 41 42 43 44 45 46             |                                  |                                           | ESMERA, BCO2, MODGRA
+40799  |                                                    |                                  |                                           | PTO/PT
+40800  | 34 35 36 37 38 39 40 41 42 43 44                   |                                  |                                           | NAT/NT, PTO/PT, PT/IGR, PTORCO, MH7MH7
+40802  | 34 35 43 44                                        | 36 37 38 39 40 41 42             |                                           | NAT/NT, PTO/PT, HUSPNK, AREARE
+40803  | 34 35 36 37 38 39 40 41                            |                                  |                                           | MRTMRT, N10N10, AZAAZA, AMAAMA, DEPDEP
+40808  | 34 35 36 41 42 43 44                               | 37 38 39 40                      |                                           | PRETO, STONE, IGNRED, NATR10, MRINH7
+40811  |                                                    |                                  |                                           | NTNT10, HIBHIB
+40812  |                                                    |                                  |                                           | IGRIGR, PT/PET, NTNT10, PTAMLM
+46021  | 33 34 35 36 37 38 39 40 41 42 43 44                |                                  |                                           |
+46072  | 25 26 27 28 29 30 31 32 33 34 35 36                |                                  |                                           |
+59330  | 33                                                 |                                  |                                           |
+59362  | 34                                                 |                                  |                                           |
+59369  | 34                                                 |                                  |                                           |
+PLB001 | 33                                                 |                                  |                                           |
+</script>
+<script id="embeddedStateScript">window.__MONITOR_EMBEDDED__=null;</script>
+<script>
+'use strict';
+/* HTML intacto, capturado antes de qualquer renderização — base do "Compartilhar app com os dados" */
+const PRISTINE_HTML = document.documentElement.outerHTML;
+
+/* ======================= CONSTANTES ======================= */
+const N = 12;                         // estações por lado (máx.)
+const MACHINE_COUNT = 30;
+const STORAGE_KEY = 'monV3';          // não mudar: dados existentes dos aparelhos
+const LAST_KEY = 'mon_last_reg';
+const BUNDLE_SEEN_KEY = 'mon_bundle_seen';
+const HISTORY_MAX = 500;
+const SIZE_MIN = 28, SIZE_MAX = 48;
+const SCHEMA_VERSION = '1.0';
+const SOURCE_APP = 'monitor';
+const SOURCE_FILE = 'monitor.html';
+const JSON_SCHEMA_NAME = 'monitor_json_backup';
+const SNAPSHOT_SCHEMA_NAME = 'snapshot_estacoes';
+const EVENTS_SCHEMA_NAME = 'eventos_troca_24h';
+// Contrato com integrador externo: não alterar colunas/ordem do CSV.
+const SNAPSHOT_CSV_HEADER = 'schema_name;schema_version;export_id;exported_at_iso;source_app;source_file;station_id;maquina;lado;estacao;parada;parada_motivo_code;parada_motivo;tipo_molde;artigo;cor;tamanho_1;tamanho_2;tamanhos_distintos_qtd;ferramenta_40594;trocas_acumuladas;station_created_at_iso;station_updated_at_iso';
+const EVENTS_CSV_HEADER = 'schema_name;schema_version;export_id;event_id;event_type;event_at_iso;station_id;maquina;lado;estacao;parada_motivo_code;parada_motivo;artigo_de;tamanho_de;artigo_para;tamanho_para;detalhe_raw';
+
+/* Ordem padrão das máquinas por linha (a equipe pode reorganizar em Layout › Ordem das máquinas) */
+const DEFAULT_LINES = [
+  { name: 'Linha 1', machines: [1,2,3,4,5] },
+  { name: 'Linha 2', machines: [6,7,8,9,10,11] },
+  { name: 'Linha 3', machines: [19,12,13,14,15,16,17] },
+  { name: 'Linha 4', machines: [18,29,20,21,22,23] },
+  { name: 'Linha 5', machines: [24,25,26,27,28] },
+  { name: 'Linha Bicolor', machines: [30] }
+];
+let LAYOUT_LINES = [];
+/* valida uma configuração: cada máquina 1..30 aparece uma vez; as que faltarem vão para "Outras" */
+function cleanLines(lines){
+  const used = new Set(), out = [];
+  (Array.isArray(lines) ? lines : []).forEach(l => {
+    if (!l || typeof l !== 'object') return;
+    const name = String(l.name || '').trim().slice(0, 40); if (!name) return;
+    const ms = (Array.isArray(l.machines) ? l.machines : []).map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= MACHINE_COUNT && !used.has(n) && used.add(n));
+    const ex = out.find(x => x.name === name);
+    ex ? ex.machines.push(...ms) : out.push({ name, machines: ms });
+  });
+  const rest = []; for (let i = 1; i <= MACHINE_COUNT; i++) if (!used.has(i)) rest.push(i);
+  if (rest.length) { const o = out.find(x => x.name === 'Outras'); o ? o.machines.push(...rest) : out.push({ name: 'Outras', machines: rest }); }
+  return out.filter(l => l.machines.length || l.name !== 'Outras');
+}
+function applyLines(lines){ LAYOUT_LINES = cleanLines(lines && lines.length ? lines : DEFAULT_LINES); }
+applyLines(DEFAULT_LINES);
+
+/* label = texto usado no CSV (contrato); full = texto de tela */
+const PARADA = {
+  MAN: { label: 'Manutenção',  short: 'Manut.',    full: 'Manutenção',            icon: '🔧' },
+  FOP: { label: 'F. Operador', short: 'F. Oper.',  full: 'Falta de operador',     icon: '👤' },
+  INT: { label: 'Interditado', short: 'Interd.',   full: 'Interditado',           icon: '🔒' },
+  FAB: { label: 'F. Abastec.', short: 'F. Abast.', full: 'Falta de abastecimento',icon: '📦' },
+  VOL: { label: 'Vaz. Óleo',   short: 'Vaz. óleo', full: 'Vazamento de óleo',     icon: '💧' }
+};
+const REASONS = Object.keys(PARADA);
+
+/* ======================= UTIL ======================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const p2 = n => String(n).padStart(2, '0');
+const p4 = n => String(n).padStart(4, '0');
+const up = v => String(v ?? '').trim().toUpperCase();
+const clone = o => JSON.parse(JSON.stringify(o));
+const fmtStamp = d => `${p2(d.getDate())}${p2(d.getMonth()+1)}${d.getFullYear()}_${p2(d.getHours())}${p2(d.getMinutes())}`;
+const fmtDateTime = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }); };
+const toCsv = v => String(v ?? '').replace(/;/g, ',').replace(/\r?\n/g, ' ').trim();
+const joinSizes = (a, b) => [a, b].filter(Boolean).join('/');
+const makeExportId = d => 'EXP_' + d.toISOString().replace(/\D/g, '').slice(0, 14);
+const stationId = (m, l, e) => `${m}-${l}-${p2(e)}`;
+const distinctSizes = (a, b) => new Set([a, b].map(v => String(v || '').trim()).filter(Boolean)).size;
+function hashStr(s){ let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+function parseKey(key){ return { maquina: parseInt(key, 10) || '', lado: String(key || '').slice(-1).toUpperCase() === 'B' ? 'B' : 'A' }; }
+function sortKeys(a, b){ const na = parseInt(a, 10) || 0, nb = parseInt(b, 10) || 0; return na - nb || String(a).localeCompare(String(b)); }
+
+const ICON = {
+  back: '<svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  chev: '<svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+  trash: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M9 6V4h6v2"/></svg>',
+  x: '<svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  grid: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  check: '<svg fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>'
+};
+
+/* ======================= CADASTRO DE MOLDES ======================= */
+/* Formato de texto (o mesmo do bloco #cadastroMoldes no HTML):
+   ARTIGO | SIMPLES | DUPLO | DUPLO MISTO | CORES
+   tamanhos separados por espaço; "34/35" = dois tamanhos no mesmo molde; cores separadas por vírgula */
+const CAD_KEY = 'mon_cadastro';
+const CAD_COLS = ['S', 'D', 'DM'];
+const TIPO_LABEL = { S: 'Simples', D: 'Duplo', DM: 'Duplo misto' };
+const TIPO_CSV = { S: 'Simples', D: 'Duplo', DM: 'Duplo_Misto' };
+const sizeKey = tok => parseInt(String(tok).split('/')[0], 10) || 0;
+const splitSizes = v => String(v || '').replace(/[,;]/g, ' ').split(/\s+/).map(x => x.trim()).filter(Boolean);
+const splitCores = v => String(v || '').split(/[,;]/).map(x => up(x)).filter(Boolean);
+
+/* valida e normaliza um artigo; devolve { rec, erros[] } */
+function cadCheck(art, cols, cores){
+  const erros = [], rec = { S: [], D: [], DM: [], cores: [] };
+  if (!/^[A-Z0-9]{3,12}$/.test(art)) erros.push(`Artigo "${art}" inválido (só letras e números, 3 a 12)`);
+  CAD_COLS.forEach(k => {
+    splitSizes(cols[k]).forEach(tok => {
+      if (!/^\d{2}(\/\d{2})?$/.test(tok)) { erros.push(`Tamanho "${tok}" inválido em ${TIPO_LABEL[k]} (ex.: 38 ou 34/35)`); return; }
+      const parts = tok.split('/');
+      if (parts.length === 2 && parts[0] === parts[1]) { erros.push(`"${tok}" repete o mesmo tamanho`); return; }
+      const t = parts.length === 2 ? parts.map(Number).sort((x, y) => x - y).join('/') : tok;
+      if (rec[k].includes(t)) { erros.push(`O molde ${t} está repetido em ${TIPO_LABEL[k]}`); return; }
+      rec[k].push(t);
+    });
+    rec[k].sort((x, y) => sizeKey(x) - sizeKey(y) || x.length - y.length);
+  });
+  splitCores(cores).forEach(c => { if (!rec.cores.includes(c)) rec.cores.push(c); });
+  return { rec, erros };
+}
+function cadParseText(text){
+  const arts = {}, erros = [];
+  String(text || '').split(/\r?\n/).forEach((line, n) => {
+    const l = line.trim(); if (!l || l.startsWith('#') || /^ARTIGO\b/i.test(l)) return;
+    const c = l.split('|').map(x => x.trim());
+    const art = up(c[0]);
+    const { rec, erros: e } = cadCheck(art, { S: c[1], D: c[2], DM: c[3] }, c[4]);
+    if (e.length) { erros.push(`Linha ${n + 1}: ${e.join('; ')}`); return; }
+    if (arts[art]) { erros.push(`Linha ${n + 1}: artigo ${art} repetido — ficou a primeira linha`); return; }
+    arts[art] = rec;
+  });
+  return { arts, erros };
+}
+function cadToText(arts){
+  const keys = Object.keys(arts).sort();
+  const rows = keys.map(a => [a, ...CAD_COLS.map(k => arts[a][k].join(' ')), arts[a].cores.join(', ')]);
+  const head = ['ARTIGO', 'SIMPLES', 'DUPLO', 'DUPLO MISTO', 'CORES'];
+  const w = [0, 1, 2, 3].map(i => Math.max(head[i].length, ...rows.map(r => r[i].length)));
+  const fmt = r => r.map((v, i) => i < 4 ? v.padEnd(w[i]) : v).join(' | ').trimEnd();
+  return [fmt(head), ...rows.map(fmt)].join('\n');
+}
+const cadHash = arts => hashStr(cadToText(arts));
+
+/* índice usado pelo registro: artigo → lista de moldes.
+   O mesmo tamanho pode estar em mais de um molde (ex.: 34/35 e 35 sozinho) */
+const Molde = (() => {
+  let by = Object.create(null), alias = Object.create(null);
+  const T = { S: 'Simples', D: 'Duplo', DM: 'Duplo_Misto' };
+  function build(arts){
+    by = Object.create(null); alias = Object.create(null);
+    for (const a in arts) {
+      const list = [];
+      CAD_COLS.forEach(k => arts[a][k].forEach(tok => list.push({ id: k + ':' + tok, label: tok, sizes: tok.split('/'), col: k, tipo: T[k] })));
+      list.sort((x, y) => sizeKey(x.label) - sizeKey(y.label) || x.sizes.length - y.sizes.length || CAD_COLS.indexOf(x.col) - CAD_COLS.indexOf(y.col));
+      // marca tamanhos que aparecem em mais de um molde, para o seletor mostrar o tipo
+      const cnt = {}; list.forEach(m => m.sizes.forEach(z => cnt[z] = (cnt[z] || 0) + 1));
+      list.forEach(m => m.shared = m.sizes.some(z => cnt[z] > 1));
+      if (list.length) by[a] = list;
+    }
+    const suf = {};
+    for (const a in by) if (a.length >= 4) { const s = a.slice(-3); suf[s] = (s in suf) ? null : a; }
+    for (const s in suf) if (suf[s] && !by[s]) alias[s] = suf[s];
+  }
+  function resolve(a){ const x = up(a); if (!x) return null; if (by[x]) return x; return alias[x] || null; }
+  function groups(a){ const r = resolve(a); return r ? by[r] : []; }
+  function sizes(a){ const set = new Set(); groups(a).forEach(m => m.sizes.forEach(z => set.add(z))); return [...set].sort((x, y) => x - y); }
+  function mold(a, id){ return groups(a).find(m => m.id === id) || null; }
+  /* tamanhos gravados a partir do molde escolhido */
+  function auto(a, id){
+    const m = mold(a, id); if (!m) return null;
+    const tam = m.sizes[0], tam2 = m.sizes.length > 1 ? m.sizes[1] : (m.col === 'D' ? tam : '');
+    return { code: m.col, tam, tam2, art: resolve(a), id: m.id, label: m.label };
+  }
+  /* acha o molde de um registro já salvo (tamanho, tamanho2, tipo) */
+  function find(a, tam, tam2, tipo){
+    const L = groups(a); if (!L.length || !tam) return null;
+    tam = String(tam); tam2 = String(tam2 || '');
+    const pair = tam2 && tam2 !== tam ? [tam, tam2].sort((x, y) => x - y).join('/') : '';
+    const pref = m => m.col === (tipo || 'S') ? 0 : 1;
+    const by2 = f => L.filter(f).sort((x, y) => pref(x) - pref(y))[0] || null;
+    return (pair && by2(m => m.label === pair)) || by2(m => m.label === tam) || by2(m => m.sizes.includes(tam));
+  }
+  return { build, resolve, sizes, groups, mold, auto, find, list: () => Object.keys(by) };
+})();
+
+/* cores sugeridas por artigo */
+const Cores = (() => {
+  let map = {};
+  return {
+    build(arts){ map = {}; for (const a in arts) if (arts[a].cores.length) map[a] = arts[a].cores; },
+    of(a){ const x = up(a); if (!x) return []; return map[x] || map[Molde.resolve(x)] || []; }
+  };
+})();
+
+/* cadastro ativo: o do arquivo, ou o editado neste aparelho */
+const Cad = { arts: {}, fileArts: {}, fileHash: '', fileAt: '', local: null, erros: [] };
+function cadApply(arts){ Cad.arts = arts; Molde.build(arts); Cores.build(arts); }
+function cadLoad(){
+  const el = document.getElementById('cadastroMoldes');
+  const parsed = cadParseText(el ? el.textContent : '');
+  Cad.fileArts = parsed.arts; Cad.erros = parsed.erros;
+  Cad.fileHash = cadHash(parsed.arts); Cad.fileAt = el?.dataset.atualizado || '';
+  if (parsed.erros.length) console.warn('Cadastro de moldes com linhas ignoradas:\n' + parsed.erros.join('\n'));
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem(CAD_KEY) || 'null'); } catch (_) {}
+  if (local && local.arts && typeof local.arts === 'object') {
+    Cad.local = local;
+    cadApply(local.arts);
+    if (local.baseHash !== Cad.fileHash && cadHash(local.arts) !== Cad.fileHash) Cad.pendingConflict = true;
+  } else cadApply(parsed.arts);
+}
+function cadSaveLocal(arts, motivo){
+  const local = { arts, updatedAt: new Date().toISOString(), baseHash: Cad.fileHash };
+  if (cadHash(arts) === Cad.fileHash) { try { localStorage.removeItem(CAD_KEY); } catch (_) {} Cad.local = null; }
+  else { try { localStorage.setItem(CAD_KEY, JSON.stringify(local)); } catch (e) { toast('Não foi possível salvar o cadastro neste aparelho', { error: true }); } Cad.local = local; }
+  cadApply(arts);
+  if (motivo) { addH('system', 'Cadastro de moldes alterado', motivo); save(); }
+}
+async function cadResolveConflict(){
+  if (!Cad.pendingConflict) return;
+  Cad.pendingConflict = false;
+  const choice = await ask({ title: 'Cadastro de moldes diferente',
+    html: `<p>O cadastro de moldes deste arquivo não é o mesmo que foi editado neste aparelho${Cad.local?.updatedAt ? ` (em <b>${esc(fmtDateTime(Cad.local.updatedAt))}</b>)` : ''}. Qual usar?</p>`,
+    actions: [{ label: 'Usar o do arquivo', value: 'file', kind: 'bp' }, { label: 'Manter o deste aparelho', value: 'local', kind: 'bo' }] });
+  if (choice === 'file') { try { localStorage.removeItem(CAD_KEY); } catch (_) {} Cad.local = null; cadApply(Cad.fileArts); toast('Usando o cadastro do arquivo'); rerenderAll(); }
+  else { Cad.local.baseHash = Cad.fileHash; try { localStorage.setItem(CAD_KEY, JSON.stringify(Cad.local)); } catch (_) {} }
+}
+
+/* ======================= ESTADO ======================= */
+let S = emptyState();
+function emptyState(){ return { machines: {}, history: [], changes: 0 }; }
+
+const isParada = st => !!(st && st.parada);
+const paradaCode = st => (!st || !st.parada) ? '' : (typeof st.parada === 'string' && PARADA[st.parada] ? st.parada : 'MAN');
+const statusOf = st => !st ? 'NONE' : isParada(st) ? paradaCode(st) : (st.artigo ? 'OK' : 'NONE');
+function sizeText(st){
+  if (!st) return '';
+  const a = String(st.tamanho || '').trim(), b = String(st.tamanho2 || '').trim();
+  if (a && b && a !== b) return a + '/' + b;
+  return a || b;
+}
+const artOf = st => (st && st.artigo) ? (Molde.resolve(st.artigo) || st.artigo) : '';
+function stationsOf(key){ return (S.machines[key] && S.machines[key].stations) || {}; }
+function getSt(key, i){ return stationsOf(key)[i] || null; }
+function setSt(key, i, rec){ if (!S.machines[key]) S.machines[key] = { stations: {} }; S.machines[key].stations[i] = rec; }
+function delSt(key, i){ const m = S.machines[key]; if (!m) return; delete m.stations[i]; if (!Object.keys(m.stations).length) delete S.machines[key]; }
+function stampRecord(prev, data){
+  const now = new Date().toISOString();
+  return { ...data, createdAtIso: (prev && (prev.createdAtIso || prev.updatedAtIso)) || now, updatedAtIso: now };
+}
+function paradaRecord(prev, reason, obs){
+  // mantém artigo/cor/tamanho para não precisar redigitar ao retirar a parada
+  return stampRecord(prev, {
+    parada: reason, artigo: prev?.artigo || '', cor: prev?.cor || '', tipo: prev?.tipo || 'S',
+    tamanho: prev?.tamanho || '', tamanho2: prev?.tamanho2 || '', trocas: prev?.trocas || 0,
+    supply: prev?.supply ?? null, ferramenta40594: prev?.ferramenta40594 || null,
+    obs: obs !== undefined ? obs : (prev?.obs || '')
+  });
+}
+function totalChanges(machines){ let t = 0; Object.values(machines || {}).forEach(m => Object.values(m?.stations || {}).forEach(st => t += Number(st?.trocas || 0))); return t; }
+function hasData(st){ return !!st && (Object.values(st.machines || {}).some(m => Object.keys(m?.stations || {}).length) || (st.history || []).length > 0); }
+function stationCount(st){ let n = 0; Object.values(st.machines || {}).forEach(m => n += Object.keys(m?.stations || {}).length); return n; }
+
+function normalizeState(raw){
+  const out = emptyState();
+  if (!raw || typeof raw !== 'object') return out;
+  const machines = raw.machines || raw.maquinas || {};
+  const history = raw.history || raw.historico || [];
+  if (machines && typeof machines === 'object') {
+    Object.entries(machines).forEach(([k, m]) => {
+      const key = up(k); if (!/^\d+[AB]$/.test(key) || !m || typeof m !== 'object') return;
+      const sts = {};
+      Object.entries(m.stations || {}).forEach(([i, st]) => {
+        const n = parseInt(i, 10); if (!n || n < 1 || n > N || !st || typeof st !== 'object') return;
+        sts[n] = { ...st, createdAtIso: st.createdAtIso || st.updatedAtIso || '', updatedAtIso: st.updatedAtIso || st.createdAtIso || '' };
+      });
+      if (Object.keys(sts).length) out.machines[key] = { ...m, stations: sts };
+    });
+  }
+  if (Array.isArray(history)) out.history = history.filter(h => h && typeof h === 'object').slice(0, HISTORY_MAX);
+  if (Array.isArray(raw.layout) && raw.layout.length) out.layout = cleanLines(raw.layout);
+  out.changes = totalChanges(out.machines);
+  return out;
+}
+function mergeStates(base, inc){
+  const out = clone(base);
+  Object.entries(inc.machines).forEach(([k, m]) => {
+    Object.entries(m.stations || {}).forEach(([i, st]) => {
+      const cur = out.machines[k]?.stations?.[i];
+      if (!cur || String(st.updatedAtIso || '') >= String(cur.updatedAtIso || '')) {
+        if (!out.machines[k]) out.machines[k] = { stations: {} };
+        out.machines[k].stations[i] = st;
+      }
+    });
+  });
+  const seen = new Set(out.history.map(h => (h.iso || '') + '|' + h.title));
+  inc.history.forEach(h => { const id = (h.iso || '') + '|' + h.title; if (!seen.has(id)) { seen.add(id); out.history.push(h); } });
+  out.history.sort((a, b) => String(b.iso || '').localeCompare(String(a.iso || '')));
+  out.history = out.history.slice(0, HISTORY_MAX);
+  if (!out.layout && inc.layout) out.layout = inc.layout;
+  out.changes = totalChanges(out.machines);
+  return out;
+}
+
+/* ---- persistência ---- */
+let saveTimer = 0;
+function persistNow(){
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = 0; }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(S)); $('#saveErr').hidden = true; }
+  catch (e) { console.error(e); $('#saveErr').hidden = false; toast('Não foi possível salvar neste aparelho. Exporte um backup.', { error: true, ms: 5000 }); }
+}
+function save(){
+  S.changes = totalChanges(S.machines);
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(persistNow, 150);
+  refreshColorHints();
+}
+addEventListener('pagehide', persistNow);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') persistNow(); });
+
+function addH(type, title, detail, meta = {}){
+  const now = new Date();
+  S.history.unshift({ type, title, detail, iso: now.toISOString(), time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), date: now.toLocaleDateString('pt-BR'), ...meta });
+  if (S.history.length > HISTORY_MAX) S.history.length = HISTORY_MAX;
+}
+
+/* ---- desfazer ---- */
+function undoPoint(){ return JSON.stringify(S); }
+function undoTo(snap, msg){ S = normalizeState(JSON.parse(snap)); applyLines(S.layout); persistNow(); rerenderAll(); toast(msg || 'Desfeito'); }
+
+/* ---- último registro (continuar) ---- */
+function getLast(){ try { return JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); } catch (_) { return null; } }
+function setLast(v){ try { v ? localStorage.setItem(LAST_KEY, JSON.stringify(v)) : localStorage.removeItem(LAST_KEY); } catch (_) {} }
+
+/* ---- pacote embutido (arquivo compartilhado) ---- */
+function seenBundles(){ try { return JSON.parse(localStorage.getItem(BUNDLE_SEEN_KEY) || '[]'); } catch (_) { return []; } }
+function markBundle(id){ try { const s = seenBundles().filter(x => x !== id); s.push(id); localStorage.setItem(BUNDLE_SEEN_KEY, JSON.stringify(s.slice(-30))); } catch (_) {} }
+let pendingBundle = null;
+
+function load(){
+  let local = null, hasKey = false;
+  try { const d = localStorage.getItem(STORAGE_KEY); if (d !== null) { hasKey = true; local = normalizeState(JSON.parse(d)); } }
+  catch (e) { hasKey = true; console.error('Falha ao ler dados locais', e); }
+  S = local || emptyState();
+
+  const emb = (window.__MONITOR_EXPORT_BUNDLE__ === true && window.__MONITOR_EMBEDDED__ && typeof window.__MONITOR_EMBEDDED__ === 'object') ? window.__MONITOR_EMBEDDED__ : null;
+  if (!emb) return;
+  const embState = normalizeState(emb);
+  if (!hasData(embState)) return;
+  const id = emb.exportId || ('h' + hashStr(JSON.stringify(emb.machines || {})));
+  if (seenBundles().includes(id)) return;
+  if (!hasKey || !hasData(S)) {
+    if (!hasKey) { S = embState; markBundle(id); persistNow(); pendingBundle = { silent: true }; return; }
+  }
+  pendingBundle = { id, state: embState, at: emb.exportedAtIso || '' };
+}
+async function resolvePendingBundle(){
+  if (!pendingBundle) return;
+  const pb = pendingBundle; pendingBundle = null;
+  if (pb.silent) { toast('Dados do arquivo carregados'); return; }
+  const n = stationCount(pb.state);
+  const localN = stationCount(S);
+  const choice = await ask({
+    title: 'Este arquivo trouxe registros',
+    html: `<p>O arquivo tem <b>${n} estação(ões)</b>${pb.at ? ` exportadas em <b>${esc(fmtDateTime(pb.at))}</b>` : ''}. Este aparelho já tem <b>${localN}</b>.</p>`,
+    actions: [
+      { label: 'Mesclar (fica o mais recente de cada estação)', value: 'merge', kind: 'bp' },
+      { label: 'Usar só os do arquivo', value: 'replace', kind: 'bo' },
+      { label: 'Manter os deste aparelho', value: 'keep', kind: 'bghost' }
+    ]
+  });
+  markBundle(pb.id);
+  if (choice === 'merge') { S = mergeStates(S, pb.state); addH('import', 'Arquivo compartilhado mesclado', `${n} estações recebidas`, { formato: 'html' }); }
+  else if (choice === 'replace') { S = pb.state; addH('import', 'Arquivo compartilhado carregado', `${n} estações`, { formato: 'html' }); }
+  else return;
+  applyLines(S.layout); persistNow(); rerenderAll(); toast(choice === 'merge' ? '✓ Dados mesclados' : '✓ Dados do arquivo carregados');
+}
+
+/* ======================= UI BÁSICA ======================= */
+let toastTimer = 0, toastAction = null;
+function toast(msg, opts = {}){
+  const t = $('#toast'), b = $('#toastBtn');
+  $('#toastMsg').textContent = msg;
+  t.classList.toggle('err', !!opts.error);
+  toastAction = opts.action || null;
+  b.hidden = !opts.action; if (opts.action) b.textContent = opts.actionLabel || 'Desfazer';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); toastAction = null; }, opts.ms || (opts.action ? 6000 : 2400));
+}
+$('#toastBtn').addEventListener('click', () => { const a = toastAction; toastAction = null; $('#toast').classList.remove('show'); if (a) a(); });
+
+const openSheets = [];
+function openSheet(id){ const el = document.getElementById(id); el.classList.add('open'); el.setAttribute('aria-hidden', 'false'); if (!openSheets.includes(id)) openSheets.push(id); }
+function closeSheet(id){ const el = document.getElementById(id); el.classList.remove('open'); el.setAttribute('aria-hidden', 'true'); const i = openSheets.indexOf(id); if (i >= 0) openSheets.splice(i, 1); }
+['editSheet', 'sizeSheet'].forEach(id => document.getElementById(id).addEventListener('click', e => {
+  if (e.target !== e.currentTarget) return;
+  id === 'editSheet' ? closeEdit() : closeSheet(id);
+}));
+
+/* diálogo que devolve a escolha (substitui confirm/alert do navegador) */
+let dlgResolve = null;
+function ask({ title, html = '', actions }){
+  return new Promise(res => {
+    if (dlgResolve) dlgResolve(null);
+    dlgResolve = res;
+    $('#dlgTitle').textContent = title;
+    $('#dlgBody').innerHTML = html;
+    $('#dlgActions').innerHTML = actions.map((a, i) => `<button class="btn ${a.kind || 'bo'} bfull" data-dlg="${i}">${esc(a.label)}</button>`).join('');
+    $$('#dlgActions [data-dlg]').forEach(b => b.onclick = () => finish(actions[+b.dataset.dlg].value));
+    openSheet('dlg');
+    setTimeout(() => $('#dlgActions .btn')?.focus(), 60);
+  });
+}
+function finish(v){ closeSheet('dlg'); const r = dlgResolve; dlgResolve = null; if (r) r(v); }
+$('#dlg').addEventListener('click', e => { if (e.target === e.currentTarget) finish(null); });
+const confirmBox = (title, text, okLabel = 'Confirmar', danger = false) =>
+  ask({ title, html: text ? `<p>${text}</p>` : '', actions: [{ label: okLabel, value: true, kind: danger ? 'bdanger' : 'bp' }, { label: 'Cancelar', value: false, kind: 'bghost' }] });
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !openSheets.length) return;
+  const top = openSheets[openSheets.length - 1];
+  if (top === 'dlg') finish(null); else if (top === 'editSheet') closeEdit(); else closeSheet(top);
+});
+
+/* ======================= NAVEGAÇÃO ======================= */
+let currentPage = 'registro';
+function showPage(name){
+  currentPage = name;
+  $$('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + name));
+  $$('.ni').forEach(b => b.classList.toggle('active', b.dataset.page === name));
+  if (name !== 'qrcode') scanStop(true);
+  if (name === 'registro') renderRegistro();
+  if (name === 'consulta') renderConsulta();
+  if (name === 'layout') renderLayout();
+  if (name === 'qrcode') enterQr();
+  if (name === 'exportar') renderHistory();
+  window.scrollTo({ top: 0 });
+}
+function rerenderAll(){
+  refreshColorHints();
+  if (currentPage === 'registro') renderRegistro();
+  if (currentPage === 'consulta') renderConsulta();
+  if (currentPage === 'layout') renderLayout();
+  if (currentPage === 'exportar') renderHistory();
+  if (currentPage === 'qrcode') renderQrGen();
+}
+
+function refreshColorHints(list){
+  const dl = $('#colorHints'); if (!dl) return;
+  let colors = list;
+  if (!colors || !colors.length) {
+    const set = new Set();
+    Object.values(S.machines).forEach(m => Object.values(m.stations || {}).forEach(st => { const c = up(st.cor); if (c) set.add(c); }));
+    colors = [...set].sort();
+  }
+  dl.innerHTML = colors.map(c => `<option value="${esc(c)}"></option>`).join('');
+}
+
+/* ======================= NÚMEROS ======================= */
+function computeStats(){
+  const machines = new Set(); const pc = { MAN: 0, FOP: 0, INT: 0, FAB: 0, VOL: 0 }; let est = 0, ok = 0, par = 0;
+  Object.entries(S.machines).forEach(([k, m]) => {
+    const sts = Object.values(m.stations || {}); if (sts.length) machines.add(parseInt(k, 10));
+    sts.forEach(st => { est++; if (isParada(st)) { par++; pc[paradaCode(st)]++; } else if (st.artigo) ok++; });
+  });
+  return { maq: machines.size, est, ok, par, pc, trocas: totalChanges(S.machines) };
+}
+function statsHTML(items){ return items.map(([v, l, cls, act]) => act ? `<button class="stat ${cls || ''}" ${act}><b>${v}</b><span>${l}</span></button>` : `<div class="stat ${cls || ''}"><b>${v}</b><span>${l}</span></div>`).join(''); }
+
+/* ======================= REGISTRO ======================= */
+const sess = { maq: null, side: null, cur: 1, ch: 0 };
+let pickedMaq = null;
+
+function sideInfo(num, side){
+  const sts = Object.values(stationsOf(num + side));
+  return { n: sts.length, par: sts.filter(isParada).length };
+}
+function renderRegistro(){
+  const inSession = !!(sess.maq && sess.side);
+  $('#regPick').hidden = inSession;
+  $('#regSession').hidden = !inSession;
+  $('#regSession').classList.toggle('active', inSession);
+  if (inSession) return renderSession();
+  $('#regSession').innerHTML = '';
+
+  const s = computeStats();
+  $('#regStats').innerHTML = statsHTML([
+    [s.maq, 'Máquinas'], [s.est, 'Estações'],
+    [s.par, 'Paradas', s.par ? 'r-MAN' : '', s.par ? 'data-act="goParadas"' : ''],
+    [s.trocas, 'Trocas', s.trocas ? 'r-VOL' : '']
+  ]);
+  const last = getLast();
+  const cb = $('#continueBtn');
+  if (last && last.maq && last.side && !last.done) {
+    cb.hidden = false;
+    cb.innerHTML = `Continuar: Máq. ${esc(last.maq)} · Lado ${esc(last.side)}${last.est ? ` · Est. ${p2(last.est)}` : ''}`;
+  } else cb.hidden = true;
+
+  $('#machineGrid').innerHTML = LAYOUT_LINES.map(l => `
+    <div class="line-block"><div class="line-name">${esc(l.name)}</div><div class="mgrid">
+      ${l.machines.map(num => {
+        const a = sideInfo(num, 'A'), b = sideInfo(num, 'B');
+        const cls = x => x.n ? (x.par ? 'par' : 'ok') : '';
+        return `<button class="mb${pickedMaq === num ? ' sel' : ''}" data-act="pickMaq" data-maq="${num}" aria-label="Máquina ${num}">
+          ${num}<span class="sides"><i class="${cls(a)}"></i><i class="${cls(b)}"></i></span></button>`;
+      }).join('')}
+    </div></div>`).join('');
+  updateSidePick();
+}
+function updateSidePick(){
+  const on = !!pickedMaq;
+  $('#sidePick').hidden = !on;
+  ['A', 'B'].forEach(side => {
+    const btn = $('#side' + side); btn.disabled = !on;
+    const inf = on ? sideInfo(pickedMaq, side) : null;
+    btn.innerHTML = `Lado ${side}<small>${!on ? '—' : inf.n ? `${inf.n} estação(ões)${inf.par ? ` · ${inf.par} parada(s)` : ''}` : 'sem registro'}</small>`;
+  });
+  $('#pickLbl').textContent = on ? `Máquina ${pickedMaq} selecionada` : '';
+  $('#sidePickLbl').textContent = on ? `Máquina ${pickedMaq}` : '';
+  $('#pickHint').hidden = on;
+}
+function firstOpenStation(key){
+  const sts = stationsOf(key);
+  for (let i = 1; i <= N; i++) if (!sts[i]) return i;
+  return 1;
+}
+function startSession(maq, side, est){
+  sess.maq = Number(maq); sess.side = side; sess.ch = 0;
+  sess.cur = est ? Math.min(N, Math.max(1, Number(est))) : firstOpenStation(sess.maq + side);
+  pickedMaq = null;
+  setLast({ maq: sess.maq, side, est: sess.cur, ts: Date.now() });
+  if (currentPage !== 'registro') showPage('registro'); else renderRegistro();
+  setTimeout(() => $('#fArt')?.focus(), 80);
+}
+function endSession(finalized){
+  if (finalized && sess.maq) {
+    const n = Object.keys(stationsOf(sess.maq + sess.side)).length;
+    addH('registro', `Máq.${sess.maq} Lado ${sess.side} finalizada`, `${n} estações registradas`);
+    save();
+    toast(`✓ Máquina ${sess.maq}${sess.side} finalizada`);
+    const last = getLast(); if (last) setLast({ ...last, done: true });
+  }
+  sess.maq = null; sess.side = null; sess.cur = 1; sess.ch = 0;
+  renderRegistro();
+}
+function stripCount(key){
+  const nums = Object.keys(stationsOf(key)).map(Number);
+  const maxReg = nums.length ? Math.max(...nums) : 0;
+  return Math.min(N, Math.max(maxReg + 1, sess.cur, 1));
+}
+function renderSession(){
+  const key = sess.maq + sess.side;
+  const sts = stationsOf(key);
+  const count = stripCount(key);
+  const nReg = Object.keys(sts).length;
+  let chips = '';
+  for (let i = 1; i <= count; i++) {
+    const st = sts[i], s = statusOf(st), cur = i === sess.cur;
+    const small = cur ? 'atual' : !st ? 'vazia' : isParada(st) ? PARADA[s].short : esc(artOf(st));
+    chips += `<button class="chip-st r-${s}${cur ? ' cur' : ''}" data-act="jump" data-i="${i}" aria-label="Estação ${i}">${p2(i)}<small>${small}</small></button>`;
+  }
+  if (count < N) chips += `<button class="chip-st add" data-act="jump" data-i="${count + 1}" aria-label="Adicionar estação ${count + 1}">+<small>nova</small></button>`;
+
+  $('#regSession').innerHTML = `
+    <div class="sess-top"><div class="sess-bar">
+      <button class="icon-btn" data-act="leave" aria-label="Voltar para escolher máquina">${ICON.back}</button>
+      <div class="grow"><b>Máq. ${sess.maq} · Lado ${sess.side}</b><span>${nReg} registrada(s)${sess.ch ? ` · ${sess.ch} troca(s) nesta sessão` : ''}</span></div>
+      <button class="btn bok bsm" data-act="finalize">${ICON.check}Finalizar</button>
+    </div>
+    <div class="strip" id="strip">${chips}</div></div>
+    <div class="card" id="regForm"></div>`;
+  mountForm($('#regForm'), { key, idx: sess.cur, mode: 'reg' });
+  requestAnimationFrame(() => { const c = $('#strip .cur'), st = $('#strip'); if (c && st) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.clientWidth / 2; });
+  setLast({ maq: sess.maq, side: sess.side, est: sess.cur, ts: Date.now() });
+}
+
+/* ======================= FORMULÁRIO DE ESTAÇÃO (registro e edição) ======================= */
+let F = null; // { key, idx, mode, root, d:{art,cor,tam,tam2,tipo,obs,ferr}, unpara }
+
+function mountForm(root, { key, idx, mode }){
+  const st = getSt(key, idx);
+  F = { key, idx: Number(idx), mode, root, unpara: false,
+    d: { art: st?.artigo || '', cor: st?.cor || '', tam: st?.tamanho || '', tam2: st?.tamanho2 || '', tipo: st?.tipo || 'S', obs: st?.obs || '', ferr: st?.ferramenta40594 || null } };
+  F.d.mold = Molde.find(F.d.art, F.d.tam, F.d.tam2, F.d.tipo)?.id || '';
+  renderForm();
+}
+function renderForm(){
+  if (!F) return;
+  const { key, idx, mode, root, d } = F;
+  const st = getSt(key, idx);
+  const par = isParada(st) && !F.unpara;
+  const pc = paradaCode(st);
+  const { maquina, lado } = parseKey(key);
+  const prev = idx > 1 ? getSt(key, idx - 1) : null;
+  const canCopy = mode === 'reg' && prev && !isParada(prev) && prev.artigo;
+  const status = !st ? '<span class="pill r-NONE">Nova</span>' : par ? `<span class="pill r-${pc}"><i class="dot"></i>${esc(PARADA[pc].full)}</span>` : isParada(st) ? '<span class="pill r-NONE">Retirando parada</span>' : '<span class="pill r-OK"><i class="dot"></i>Registrada</span>';
+  const title = mode === 'reg' ? `Estação <span class="mono">${p2(idx)}</span>` : `Máq. ${maquina} · ${lado} · Est. <span class="mono">${p2(idx)}</span>`;
+
+  root.innerHTML = `
+    <div class="form-h">
+      <div class="grow"><div class="st-title" id="editTitle">${title}</div></div>
+      ${status}
+      ${mode === 'modal' ? `<button class="icon-btn" data-act="closeEdit" aria-label="Fechar">${ICON.x}</button>` : ''}
+    </div>
+    ${canCopy ? `<button class="btn bo bsm bfull" data-act="copyPrev" style="margin-bottom:12px">Copiar da estação ${p2(idx - 1)} (${esc(artOf(prev))} · ${esc(sizeText(prev))})</button>` : ''}
+    ${par ? `<div class="para-banner r-${pc}"><div class="grow">${PARADA[pc].icon} Parada: ${esc(PARADA[pc].full)}${st.artigo ? `<small>Último artigo: ${esc(st.artigo)} · ${esc(sizeText(st))}${st.cor ? ' · ' + esc(st.cor) : ''}</small>` : ''}</div>
+      <button class="btn bo bsm" data-act="unpara">Retirar parada</button></div>` : `
+    <div class="two">
+      <label class="field"><span>Artigo</span><input class="input mono" id="fArt" inputmode="numeric" autocomplete="off" enterkeyhint="next" placeholder="Ex.: 769" value="${esc(d.art)}"></label>
+      <label class="field"><span>Cor</span><input class="input" id="fCor" list="colorHints" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next" placeholder="Ex.: PT/PTG" value="${esc(d.cor)}"></label>
+    </div>
+    <div class="hint" id="fArtHint"></div>
+    <div class="sug" id="fCorSug"></div>
+    <div class="ferr" id="fFerr" hidden><div class="field" style="margin-bottom:6px"><span>Ferramenta (40594)</span></div>
+      <div class="seg"><button data-act="ferr" data-v="FRENTE">Frente</button><button data-act="ferr" data-v="TRASEIRA">Traseira</button></div></div>
+    <div class="field"><span>Tamanho</span><button class="size-field" id="fTam" data-act="pickSize"></button></div>
+    <div class="tipo-line" id="fTipo"></div>`}
+    ${d.obs || par ? '' : `<button class="obs-toggle" data-act="showObs" id="obsToggle">+ Observação</button>`}
+    <label class="field" id="obsField" ${d.obs || par ? '' : 'hidden'}><span>Observação <span class="muted">(sai na impressão)</span></span><textarea class="input" id="fObs" rows="2" placeholder="Ex.: molde com rebarba">${esc(d.obs)}</textarea></label>
+    ${par ? '' : `<div class="para-title">Estação parada? Toque no motivo:</div>
+    <div class="para-grid">${REASONS.map(r => `<button class="pbtn r-${r}" data-act="parada" data-r="${r}">${PARADA[r].icon} ${esc(PARADA[r].full)}</button>`).join('')}</div>`}
+    ${par ? `<div class="para-title">Trocar motivo:</div><div class="para-grid">${REASONS.map(r => `<button class="pbtn r-${r}${r === pc ? ' on' : ''}" data-act="parada" data-r="${r}">${PARADA[r].icon} ${esc(PARADA[r].full)}</button>`).join('')}</div>` : ''}
+    <div class="form-actions">
+      ${st ? `<button class="icon-btn danger" data-act="delSt" aria-label="Excluir estação" title="Excluir estação" style="height:46px;width:46px">${ICON.trash}</button>` : ''}
+      ${mode === 'modal' ? '<button class="btn bo" data-act="closeEdit">Cancelar</button>' : ''}
+      <button class="btn bp" data-act="saveForm">${par ? 'Salvar observação' : mode === 'reg' ? (idx < N ? `Salvar e ir para ${p2(idx + 1)}` : 'Salvar estação') : 'Salvar'}</button>
+    </div>
+    ${mode === 'reg' && !par ? '<p class="kbd-hint">Enter no artigo pula para a cor; Enter na cor abre os tamanhos.</p>' : ''}`;
+
+  if (!par) {
+    const art = $('#fArt', root), cor = $('#fCor', root);
+    art.addEventListener('input', onArtInput);
+    art.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); cor.focus(); } });
+    cor.addEventListener('input', () => { const p = cor.selectionStart; cor.value = cor.value.toUpperCase(); try { cor.setSelectionRange(p, p); } catch (_) {} F.d.cor = cor.value.trim(); markSug(); });
+    cor.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); openSize(); } });
+    refreshArtUI(false);
+  }
+  $('#fObs', root)?.addEventListener('input', e => F.d.obs = e.target.value);
+}
+function onArtInput(e){
+  const el = e.target;
+  el.value = el.value.toUpperCase().replace(/\s+/g, '');
+  const prevArt = Molde.resolve(F.d.art);
+  F.d.art = el.value;
+  const nowArt = Molde.resolve(F.d.art);
+  // tamanho só continua se ainda existir para o novo artigo
+  if (nowArt !== prevArt && F.d.tam) { const m = Molde.find(F.d.art, F.d.tam, F.d.tam2, F.d.tipo); F.d.mold = m ? m.id : ''; if (!m) { F.d.tam = ''; F.d.tam2 = ''; F.d.tipo = 'S'; } }
+  refreshArtUI(true);
+}
+function refreshArtUI(fromTyping){
+  if (!F) return;
+  const { d, root } = F;
+  const hint = $('#fArtHint', root), res = Molde.resolve(d.art);
+  if (!d.art) { hint.className = 'hint'; hint.textContent = ''; }
+  else if (res) { hint.className = 'hint ok'; hint.textContent = res !== up(d.art) ? `Artigo ${res} · ${Molde.groups(res).length} moldes no cadastro` : `${Molde.groups(res).length} moldes no cadastro`; }
+  else if (d.art.length >= 3) { hint.className = 'hint err'; hint.innerHTML = `Artigo não encontrado no cadastro de moldes. <button type="button" class="linkbtn" data-act="cadNew" data-art="${esc(up(d.art))}">Cadastrar ${esc(up(d.art))}</button>`; }
+  else { hint.className = 'hint info'; hint.textContent = 'Continue digitando…'; }
+  $('#fArt', root)?.classList.toggle('invalid', !!d.art && d.art.length >= 3 && !res);
+
+  const cores = Cores.of(d.art);
+  refreshColorHints(cores);
+  $('#fCorSug', root).innerHTML = cores.map(c => `<button type="button" data-act="cor" data-v="${esc(c)}">${esc(c)}</button>`).join('');
+  markSug();
+
+  const is594 = res === '40594';
+  $('#fFerr', root).hidden = !is594;
+  if (!is594 && fromTyping) d.ferr = null;
+  $$('#fFerr [data-act="ferr"]', root).forEach(b => b.classList.toggle('active', b.dataset.v === d.ferr));
+
+  const tb = $('#fTam', root);
+  if (d.tam) { tb.classList.remove('is-empty'); tb.innerHTML = `<span>${esc(joinSizes(d.tam, d.tam2 && d.tam2 !== d.tam ? d.tam2 : ''))}</span>${ICON.grid}`; }
+  else { tb.classList.add('is-empty'); tb.innerHTML = `<span>${res ? 'Escolher tamanho' : 'Digite o artigo primeiro'}</span>${ICON.grid}`; }
+  const auto = d.mold ? Molde.auto(d.art, d.mold) : null;
+  $('#fTipo', root).innerHTML = auto ? `Molde <b>${TIPO_LABEL[auto.code]}</b>${auto.label.includes('/') ? ` · ${esc(auto.label)} no mesmo molde` : ''} (pelo cadastro)` : (d.tam && res ? '<span style="color:var(--warn)">Esse tamanho não bate com nenhum molde do cadastro — escolha de novo</span>' : '');
+}
+function markSug(){ if (!F) return; $$('#fCorSug button', F.root).forEach(b => b.classList.toggle('on', b.dataset.v === up(F.d.cor))); }
+
+/* ---- seletor de tamanho ---- */
+function openSize(){
+  if (!F) return;
+  const res = Molde.resolve(F.d.art);
+  const grid = $('#sizeGrid');
+  $('#sizeTitle').textContent = res ? `Tamanho · artigo ${res}` : 'Tamanho';
+  if (!res) {
+    $('#sizeNote').textContent = F.d.art ? `O artigo ${F.d.art} não está no cadastro de moldes. Confira o número.` : 'Digite o artigo para liberar os tamanhos cadastrados.';
+    let h = ''; for (let s = SIZE_MIN; s <= SIZE_MAX; s++) h += `<button class="size-btn" disabled>${s}</button>`;
+    grid.innerHTML = h;
+  } else {
+    const gs = Molde.groups(res);
+    const dup = gs.some(g => g.shared);
+    $('#sizeNote').textContent = dup ? 'Este artigo tem o mesmo tamanho em moldes diferentes — confira o par (roxo) ou o tamanho sozinho.' : gs.some(g => g.sizes.length > 1) ? 'Pares em roxo: os dois tamanhos saem do mesmo molde.' : 'Só aparecem os moldes cadastrados para este artigo.';
+    grid.innerHTML = gs.map(g => {
+      const sel = g.id === F.d.mold;
+      const small = g.sizes.length > 1 ? (g.col === 'DM' ? 'duplo misto' : g.col === 'D' ? 'duplo · mesmo molde' : 'mesmo molde') : (g.shared ? TIPO_LABEL[g.col].toLowerCase() : '');
+      return `<button class="size-btn${g.sizes.length > 1 ? ' grp' : ''}${sel ? ' sel' : ''}" data-act="size" data-v="${esc(g.id)}">${esc(g.label)}${small ? `<small>${small}</small>` : ''}</button>`;
+    }).join('');
+  }
+  openSheet('sizeSheet');
+  setTimeout(() => ($('#sizeGrid .sel') || $('#sizeGrid .size-btn:not(:disabled)'))?.focus(), 60);
+}
+function pickSize(id){
+  if (!F) return;
+  const auto = Molde.auto(F.d.art, id); if (!auto) return;
+  F.d.mold = auto.id; F.d.tam = auto.tam; F.d.tam2 = auto.tam2; F.d.tipo = auto.code;
+  closeSheet('sizeSheet');
+  refreshArtUI(false);
+  $('#fTam', F.root)?.classList.remove('invalid');
+  $('[data-act="saveForm"]', F.root)?.focus();
+}
+
+/* ---- salvar / parada / excluir ---- */
+function readForm(){
+  if (!F) return;
+  const art = $('#fArt', F.root), cor = $('#fCor', F.root), obs = $('#fObs', F.root);
+  if (art) F.d.art = up(art.value); if (cor) F.d.cor = up(cor.value); if (obs) F.d.obs = obs.value.trim();
+}
+function afterFormSave(msg){
+  save();
+  if (F.mode === 'reg') {
+    if (F.idx < N) sess.cur = F.idx + 1; else msg += ' · todas as 12 conferidas';
+    toast(msg);
+    renderSession();
+    setTimeout(() => $('#fArt')?.focus(), 60);
+  } else {
+    closeEdit(); toast(msg); rerenderAll();
+  }
+}
+function saveForm(){
+  readForm();
+  const { key, idx, d } = F;
+  const { maquina, lado } = parseKey(key);
+  const prev = getSt(key, idx);
+  const tag = `Est.${p2(idx)} — Maq.${maquina}${lado}`;
+
+  if (isParada(prev) && !F.unpara) { // só observação
+    setSt(key, idx, { ...prev, obs: d.obs, updatedAtIso: new Date().toISOString() });
+    return afterFormSave(`✓ Observação salva na Est. ${p2(idx)}`);
+  }
+  if (!d.art) { $('#fArt', F.root)?.focus(); return toast('Informe o artigo', { error: true }); }
+  if (!Molde.resolve(d.art)) { $('#fArt', F.root)?.focus(); return toast('Artigo não está no cadastro de moldes', { error: true }); }
+  if (!d.mold) { $('#fTam', F.root)?.classList.add('invalid'); openSize(); return; }
+  const auto = Molde.auto(d.art, d.mold);
+  if (!auto) { openSize(); return toast('Escolha o molde de novo', { error: true }); }
+  const art = auto.art, tam = auto.tam, tam2 = auto.tam2 || '';
+  let trocas = prev?.trocas || 0;
+  let msg = `✓ Est. ${p2(idx)} salva`;
+  const prevArt = prev?.artigo ? (Molde.resolve(prev.artigo) || up(prev.artigo)) : '';
+  if (prevArt && (prevArt !== art || String(prev.tamanho || '') !== tam || String(prev.tamanho2 || '') !== tam2)) {
+    trocas++; if (F.mode === 'reg') sess.ch++;
+    const de = joinSizes(prev.tamanho, prev.tamanho2), para = joinSizes(tam, tam2);
+    addH('troca', `Troca ${tag}`, `${prev.artigo}/${de || '-'} → ${art}/${para || '-'}`, { maquina, lado, estacao: idx, artigo_de: prev.artigo || '', tamanho_de: de, artigo_para: art, tamanho_para: para });
+    msg = `✓ Troca registrada na Est. ${p2(idx)}`;
+  }
+  if (isParada(prev)) {
+    const para = joinSizes(tam, tam2);
+    addH('retomada', `Retomada ${tag}`, `${PARADA[paradaCode(prev)].label} → ${art}/${para || '-'}`, { maquina, lado, estacao: idx, parada_motivo_code: paradaCode(prev), parada_motivo: PARADA[paradaCode(prev)].label, artigo_para: art, tamanho_para: para });
+    msg = `✓ Est. ${p2(idx)} voltou a produzir`;
+  }
+  setSt(key, idx, stampRecord(prev, {
+    artigo: art, cor: d.cor, tipo: auto.code, tamanho: tam, tamanho2: tam2, trocas, parada: false,
+    supply: prev?.supply ?? null, ferramenta40594: art === '40594' ? (d.ferr || null) : null, obs: d.obs || ''
+  }));
+  afterFormSave(msg);
+}
+function markParada(reason){
+  readForm();
+  const { key, idx, d } = F;
+  const { maquina, lado } = parseKey(key);
+  const prev = getSt(key, idx) || {};
+  if (!isParada(prev) || paradaCode(prev) !== reason) {
+    const de = joinSizes(prev.tamanho, prev.tamanho2);
+    addH('parada', `Parada Est.${p2(idx)} — Maq.${maquina}${lado}`, `${PARADA[reason].label}${prev.artigo ? ` · ${prev.artigo}/${de || '-'}` : ''}`,
+      { maquina, lado, estacao: idx, parada_motivo_code: reason, parada_motivo: PARADA[reason].label, artigo_de: prev.artigo || '', tamanho_de: de });
+  }
+  setSt(key, idx, paradaRecord(prev, reason, d.obs));
+  afterFormSave(`Est. ${p2(idx)}: ${PARADA[reason].full}`);
+}
+function deleteStation(key, idx, fromForm){
+  const prev = getSt(key, idx); if (!prev) return;
+  const snap = undoPoint();
+  const { maquina, lado } = parseKey(key);
+  const de = joinSizes(prev.tamanho, prev.tamanho2);
+  addH('exclusao', `Exclusão Est.${p2(idx)} — Maq.${key}`, isParada(prev) ? PARADA[paradaCode(prev)].label : (prev.artigo || 'Sem registro'),
+    { maquina, lado, estacao: Number(idx), artigo_de: prev.artigo || '', tamanho_de: de, parada_motivo_code: isParada(prev) ? paradaCode(prev) : '', parada_motivo: isParada(prev) ? PARADA[paradaCode(prev)].label : '' });
+  delSt(key, idx);
+  save();
+  if (fromForm && F?.mode === 'modal') closeEdit();
+  rerenderAll();
+  toast(`Est. ${p2(idx)} da máq. ${key} excluída`, { action: () => undoTo(snap, 'Estação restaurada') });
+}
+async function deleteMachine(num){
+  const n = Object.keys(stationsOf(num + 'A')).length + Object.keys(stationsOf(num + 'B')).length;
+  if (!await confirmBox(`Excluir a máquina ${num}?`, `Apaga as ${n} estação(ões) dos lados A e B.`, 'Excluir máquina', true)) return;
+  const snap = undoPoint();
+  ['A', 'B'].forEach(lado => Object.entries(stationsOf(num + lado)).forEach(([idx, st]) => {
+    addH('exclusao', `Exclusão Est.${p2(idx)} — Maq.${num}${lado}`, isParada(st) ? PARADA[paradaCode(st)].label : (st.artigo || 'Sem registro'),
+      { maquina: num, lado, estacao: Number(idx), artigo_de: st.artigo || '', tamanho_de: joinSizes(st.tamanho, st.tamanho2), parada_motivo_code: isParada(st) ? paradaCode(st) : '', parada_motivo: isParada(st) ? PARADA[paradaCode(st)].label : '' });
+  }));
+  delete S.machines[num + 'A']; delete S.machines[num + 'B'];
+  save(); rerenderAll();
+  toast(`Máquina ${num} excluída`, { action: () => undoTo(snap, 'Máquina restaurada') });
+}
+
+/* ---- edição (folha) ---- */
+function openEdit(key, idx){
+  if (!getSt(key, idx)) return;
+  const rf = $('#regForm'); if (rf) rf.innerHTML = ''; // evita campos duplicados com o registro em segundo plano
+  mountForm($('#editBody'), { key, idx, mode: 'modal' });
+  openSheet('editSheet');
+}
+function closeEdit(){
+  closeSheet('editSheet');
+  if (F && F.mode === 'modal') F = null;
+  if (currentPage === 'registro' && sess.maq) renderSession();
+}
+
+/* ======================= FILTROS (consulta e layout) ======================= */
+const filt = { c: new Set(), l: new Set() };
+function filterVals(p){ const pre = p; return { art: up($('#' + pre + 'Art').value), cor: up($('#' + pre + 'Cor').value), tam: up($('#' + pre + 'Tam').value), st: filt[p] }; }
+function isFiltering(f){ return !!(f.art || f.cor || f.tam || f.st.size); }
+function matches(st, f){
+  if (f.st.size && !f.st.has(statusOf(st))) return false;
+  if (f.art) {
+    if (f.art === 'PARADA') { if (!isParada(st)) return false; }
+    else if (!up(st.artigo).includes(f.art) && !String(Molde.resolve(st.artigo) || '').includes(f.art)) return false;
+  }
+  if (f.cor && !up(st.cor).includes(f.cor)) return false;
+  if (f.tam && !String(st.tamanho || '').includes(f.tam) && !String(st.tamanho2 || '').includes(f.tam)) return false;
+  return true;
+}
+function chipsHTML(p, s){
+  const f = filt[p];
+  const items = [['OK', 'Produzindo', s.ok], ...REASONS.map(r => [r, PARADA[r].short, s.pc[r]])];
+  const any = isFiltering(filterVals(p));
+  return items.map(([code, lbl, n]) => `<button class="fchip r-${code}${f.has(code) ? ' on' : ''}" data-act="fchip" data-p="${p}" data-v="${code}" aria-pressed="${f.has(code)}"><i class="dot"></i>${esc(lbl)} <b>${n}</b></button>`).join('')
+    + (any ? `<button class="fchip clear" data-act="fclear" data-p="${p}">Limpar filtros</button>` : '');
+}
+
+/* ======================= CONSULTA ======================= */
+const closedLines = new Set();
+function tileHTML(key, idx, st){
+  const s = statusOf(st);
+  const flags = [];
+  if (st.trocas) flags.push(`<span class="flag trc">${st.trocas} troca${st.trocas > 1 ? 's' : ''}</span>`);
+  if (st.obs) flags.push(`<span class="flag obs" title="${esc(st.obs)}">obs.</span>`);
+  if (st.ferramenta40594 && !isParada(st)) flags.push(`<span class="flag">${esc(st.ferramenta40594 === 'FRENTE' ? 'Frente' : 'Traseira')}</span>`);
+  const tag = isParada(st) ? '' : `<span class="t-tag">${esc(st.tipo || 'S')}</span>`;
+  const body = isParada(st)
+    ? `<span class="t-para">${PARADA[s].icon} ${esc(PARADA[s].short)}</span>${st.artigo ? `<span class="t-cor">era ${esc(artOf(st))} · ${esc(sizeText(st))}</span>` : ''}`
+    : `<span class="t-art">${esc(artOf(st) || '—')}</span><span class="t-sz">${esc(sizeText(st) || '—')}</span><span class="t-cor">${esc(st.cor || 'sem cor')}</span>`;
+  return `<button class="tile r-${s}" data-act="edit" data-key="${key}" data-i="${idx}" aria-label="Editar estação ${idx} da máquina ${key}">
+    <span class="t-top"><span>Est. <span class="mono">${p2(idx)}</span></span>${tag}</span>${body}
+    ${flags.length ? `<span class="t-flags">${flags.join('')}</span>` : ''}</button>`;
+}
+function renderConsulta(){
+  const s = computeStats();
+  $('#cStats').innerHTML = statsHTML([[s.maq, 'Máquinas'], [s.est, 'Estações'], [s.ok, 'Produzindo', 'r-OK'], [s.par, 'Paradas', s.par ? 'r-MAN' : '']]);
+  $('#cChips').innerHTML = chipsHTML('c', s);
+  const f = filterVals('c'), filtering = isFiltering(f);
+  const list = $('#cList');
+  if (!s.est) {
+    $('#cResults').textContent = '';
+    list.innerHTML = `<div class="empty"><h3>Nenhuma estação registrada</h3><p>Comece pela aba Registro ou importe um backup em Dados.</p><button class="btn bp" data-page-go="registro">Ir para Registro</button></div>`;
+    return;
+  }
+  let shown = 0, html = '';
+  LAYOUT_LINES.forEach(line => {
+    let lineHtml = '', lEst = 0, lPar = 0;
+    line.machines.forEach(num => {
+      let sidesHtml = '', mOk = 0; const mPar = {};
+      let hasAny = false;
+      ['A', 'B'].forEach(side => {
+        const key = num + side;
+        const entries = Object.entries(stationsOf(key)).sort((a, b) => a[0] - b[0]);
+        entries.forEach(([, st]) => { if (isParada(st)) mPar[paradaCode(st)] = (mPar[paradaCode(st)] || 0) + 1; else mOk++; });
+        const vis = entries.filter(([, st]) => matches(st, f));
+        if (!vis.length) return;
+        hasAny = true; shown += vis.length; lEst += vis.length; lPar += vis.filter(([, st]) => isParada(st)).length;
+        sidesHtml += `<div class="side-lbl">Lado ${side}</div><div class="tiles">${vis.map(([i, st]) => tileHTML(key, i, st)).join('')}</div>`;
+      });
+      if (!hasAny) return;
+      const badges = (mOk ? `<span class="pill r-OK">${mOk} ok</span>` : '') + Object.entries(mPar).map(([c, n]) => `<span class="pill r-${c}">${PARADA[c].icon} ${n}</span>`).join('');
+      lineHtml += `<div class="mcard"><div class="mcard-h"><h3>Máquina ${num}</h3><div class="badges grow">${badges}</div>
+        <button class="btn bo bsm" data-act="startFrom" data-maq="${num}">Registrar</button>
+        <button class="icon-btn danger" data-act="delMaq" data-maq="${num}" aria-label="Excluir máquina ${num}" title="Excluir máquina ${num}">${ICON.trash}</button></div>${sidesHtml}</div>`;
+    });
+    if (!lineHtml) return;
+    const closed = closedLines.has(line.name) && !filtering;
+    html += `<div class="lgroup${closed ? ' closed' : ''}"><button class="lgroup-h" data-act="togLine" data-l="${esc(line.name)}" aria-expanded="${!closed}"><b>${esc(line.name)}</b><span>${lEst} est.${lPar ? ` · ${lPar} parada(s)` : ''}</span>${ICON.chev}</button><div class="lgroup-b">${lineHtml}</div></div>`;
+  });
+  $('#cResults').textContent = filtering ? `${shown} estação(ões) encontrada(s)` : '';
+  list.innerHTML = html || `<div class="empty"><h3>Nada com esses filtros</h3><p>Tente outro artigo, cor ou tamanho.</p><button class="btn bo" data-act="fclear" data-p="c">Limpar filtros</button></div>`;
+}
+
+/* ======================= LAYOUT FÍSICO (modelo "Layout — Vulcanização") ======================= */
+/* CSS compartilhado entre a tela e a impressão */
+const GL_CSS = `
+.gl-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.gl-card{background:#fff;border:1px solid #D5DBE5;border-radius:10px;padding:9px 12px;display:grid;grid-template-columns:auto 1fr;column-gap:9px;align-items:center}
+.gl-card i{width:11px;height:11px;border-radius:50%;background:var(--k)}
+.gl-card b{font-size:21px;font-weight:800;color:#0B1F3A;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.gl-card span{grid-column:2;font-size:9.5px;font-weight:700;color:#64748B;letter-spacing:.06em;text-transform:uppercase}
+.gl-line{background:#fff;border:1px solid #E5E9F0;border-radius:10px;padding:10px 10px 12px;margin-bottom:14px;break-inside:avoid;page-break-inside:avoid}
+.gl-line-t{font-size:12px;font-weight:800;color:#475569;letter-spacing:.06em;text-transform:uppercase;margin:4px 2px 9px}
+.gl-maqs{display:flex;flex-wrap:wrap;gap:5px;align-items:stretch}
+.gl-maq{flex:var(--cols) 1 calc(var(--cols) * var(--cw,56px) + 14px);min-width:calc(var(--cols) * var(--cw,56px) + 14px);max-width:calc(var(--cols) * var(--cwmax,120px) + 14px);border:1px solid #98A6BC;border-radius:6px;overflow:hidden;background:#fff;display:flex;flex-direction:column;break-inside:avoid}
+.gl-maq-h{background:#0B3A8C;color:#fff;font-weight:800;font-size:13px;padding:4px 9px;white-space:nowrap}
+.gl-side{display:grid;grid-template-columns:var(--sl,14px) repeat(var(--cols),minmax(0,1fr));flex:1}
+.gl-side+.gl-side{border-top:1.5px solid #98A6BC}
+.gl-sl{background:#EDF2F9;color:#1E3A6E;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border-right:1px solid #CBD5E1}
+.gl-st{position:relative;border:0;border-right:1px solid #CBD5E1;background:#fff;padding:12px 2px 4px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52px;font:inherit;color:#0F172A;min-width:0}
+.gl-st:last-child{border-right:0}
+.gl-n{position:absolute;top:2px;left:3px;font-size:8.5px;font-weight:800;color:#1D4ED8;line-height:1}
+.gl-o{position:absolute;top:2px;right:3px;font-size:9px;font-weight:800;color:#1D4ED8;line-height:1}
+.gl-a{font-size:13px;font-weight:800;line-height:1.1;letter-spacing:-.01em}
+.gl-t{font-size:10.5px;font-weight:700;color:#1E293B;line-height:1.2}
+.gl-c{font-size:8.5px;font-weight:600;color:#7C8AA0;text-transform:uppercase;letter-spacing:.02em;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gl-st.ok{background:#E2F3E5}.gl-st.ok .gl-a{color:#2E8540}
+.gl-st.par{background:repeating-linear-gradient(135deg,var(--pb) 0 6px,var(--pb2) 6px 12px)}
+.gl-st.par .gl-dash{color:var(--pc);font-weight:800;font-size:13px;line-height:1}
+.gl-st.par .gl-pl{font-size:8.5px;font-weight:800;color:#1E293B;letter-spacing:.03em;text-transform:uppercase;margin-top:3px;line-height:1.15}
+.gl-st.par .gl-was{font-size:8px;font-weight:600;color:#7C8AA0;margin-top:1px}
+.gl-st.vazia{background:#F8FAFC}
+.gl-st.p-MAN{--pb:#FFF8E1;--pb2:#FDF0CB;--pc:#C9A227}
+.gl-st.p-FOP{--pb:#F7F1FE;--pb2:#EDE3FC;--pc:#9333EA}
+.gl-st.p-INT{--pb:#F4F6F9;--pb2:#E6EAF0;--pc:#64748B}
+.gl-st.p-FAB{--pb:#FFF1F1;--pb2:#FDE2E2;--pc:#DC2626}
+.gl-st.p-VOL{--pb:#FFF4E5;--pb2:#FDE7C8;--pc:#C2410C}
+`;
+(function injectGL(){ const st = document.createElement('style'); st.textContent = GL_CSS + `
+button.gl-st{cursor:pointer}button.gl-st:hover{box-shadow:inset 0 0 0 2px #2563EB}
+@media (min-width:900px){.gl-line{--cw:40px}.gl-a{font-size:12.5px}}
+@media (max-width:899px){
+ .gl-cards{display:flex;overflow-x:auto;gap:8px;padding-bottom:4px;scrollbar-width:none}
+ .gl-card{flex:0 0 auto;min-width:108px;padding:7px 10px}.gl-card b{font-size:18px}
+ .gl-line{padding:8px 6px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .gl-maq{flex:var(--cols) 1 calc(var(--cols) * 50px + 16px);min-width:calc(var(--cols) * 50px + 16px);max-width:none}
+ .gl-st{padding:13px 2px 5px;min-height:56px}
+ .gl-a{font-size:13.5px;letter-spacing:-.02em}.gl-t{font-size:11px}.gl-c{font-size:9px;letter-spacing:0;white-space:normal;overflow-wrap:anywhere;text-overflow:clip}
+ .gl-st.par .gl-pl{font-size:8.5px}
+}`;
+  document.head.appendChild(st); })();
+
+const GL_REASON = { MAN: 'Manut', FOP: 'F. Oper.', INT: 'Interd.', FAB: 'F. Abast.', VOL: 'Vaz. óleo' };
+function layoutModel(f){
+  const filtering = isFiltering(f); const lines = [];
+  const cnt = { maq: 0, ok: 0, par: 0, est: 0, man: 0, outras: 0 };
+  LAYOUT_LINES.forEach(line => {
+    const machines = [];
+    line.machines.forEach(num => {
+      let any = false, data = false;
+      const sides = ['A', 'B'].map(side => {
+        const key = num + side;
+        const all = stationsOf(key);
+        if (Object.keys(all).length) data = true;
+        const vis = Object.entries(all).filter(([, st]) => matches(st, f)).sort((a, b) => a[0] - b[0]);
+        if (vis.length) any = true;
+        vis.forEach(([, st]) => { cnt.est++; if (isParada(st)) { cnt.par++; paradaCode(st) === 'MAN' ? cnt.man++ : cnt.outras++; } else cnt.ok++; });
+        return { side, key, all, vis };
+      });
+      if (filtering ? !any : !data) return;   // sem filtro, só mostra máquinas com registro
+      cnt.maq++;
+      // colunas = maior nº de estação do lado (com filtro: posições que aparecem)
+      const cols = filtering
+        ? Math.max(1, ...sides.map(s => s.vis.length))
+        : Math.max(1, ...sides.flatMap(s => Object.keys(s.all).map(Number)));
+      machines.push({ num, sides, cols, filtering });
+    });
+    if (machines.length) lines.push({ name: line.name, machines });
+  });
+  return { lines, cnt, filtering };
+}
+function glCell(key, i, st, interactive){
+  const tag = interactive ? 'button' : 'div';
+  const attrs = interactive ? ` data-act="edit" data-key="${key}" data-i="${i}" title="${esc(st.obs ? 'Obs.: ' + st.obs : 'Editar estação ' + p2(i))}"` : '';
+  const n = `<span class="gl-n">${p2(i)}</span>${st.obs ? '<span class="gl-o">✎</span>' : ''}`;
+  if (isParada(st)) {
+    const c = paradaCode(st);
+    return `<${tag} class="gl-st par p-${c}"${attrs}>${n}<span class="gl-dash">—</span><span class="gl-pl">⚠ ${esc(GL_REASON[c])}</span>${st.artigo ? `<span class="gl-was">${esc(artOf(st))}</span>` : ''}</${tag}>`;
+  }
+  return `<${tag} class="gl-st ok"${attrs}>${n}<span class="gl-a">${esc(artOf(st))}</span><span class="gl-t">${esc(sizeText(st))}</span><span class="gl-c">${esc(st.cor || '')}</span></${tag}>`;
+}
+function glLinesHTML(lines, interactive){
+  return lines.map(l => `<section class="gl-line"><div class="gl-line-t">${esc(l.name)}</div><div class="gl-maqs">${l.machines.map(m => {
+    const sides = m.sides.map(sd => {
+      let cells = '';
+      if (m.filtering) {
+        sd.vis.forEach(([i, st]) => cells += glCell(sd.key, i, st, interactive));
+        for (let k = sd.vis.length; k < m.cols; k++) cells += '<div class="gl-st vazia"></div>';
+      } else {
+        for (let i = 1; i <= m.cols; i++) {
+          const st = sd.all[i];
+          cells += st ? glCell(sd.key, i, st, interactive) : `<div class="gl-st vazia"><span class="gl-n">${p2(i)}</span></div>`;
+        }
+      }
+      return `<div class="gl-side"><div class="gl-sl">${sd.side}</div>${cells}</div>`;
+    }).join('');
+    return `<div class="gl-maq" style="--cols:${m.cols}"><div class="gl-maq-h">Máquina ${m.num}</div>${sides}</div>`;
+  }).join('')}</div></section>`).join('');
+}
+function glCardsHTML(cnt){
+  return [['#2E9E45', cnt.ok, 'Produzindo'], ['#C9A227', cnt.man, 'Manutenção'], ['#DC2626', cnt.outras, 'Outras paradas'], ['#94A3B8', cnt.maq, 'Máquinas'], ['#0B3A8C', cnt.est, 'Estações']]
+    .map(([k, v, l]) => `<div class="gl-card" style="--k:${k}"><i></i><b>${v}</b><span>${l}</span></div>`).join('');
+}
+function renderLayout(){
+  const s = computeStats();
+  const f = filterVals('l');
+  const { lines, cnt } = layoutModel(f);
+  $('#lStats').innerHTML = glCardsHTML(cnt);
+  $('#lChips').innerHTML = chipsHTML('l', s);
+  $('#layoutContent').innerHTML = lines.length ? glLinesHTML(lines, true)
+    : `<div class="empty"><h3>${s.est ? 'Nada com esses filtros' : 'Nenhuma estação registrada'}</h3><p>${s.est ? 'Ajuste os filtros acima.' : 'O layout aparece aqui conforme as máquinas são registradas.'}</p></div>`;
+}
+
+function printLayout(){
+  const f = filterVals('l');
+  const { lines, cnt } = layoutModel(f);
+  if (!lines.length) return toast('Nada para imprimir com esses filtros');
+  const filtros = [f.art && 'Artigo ' + f.art, f.cor && 'Cor ' + f.cor, f.tam && 'Tam. ' + f.tam, f.st.size && 'Status: ' + [...f.st].map(c => c === 'OK' ? 'Produzindo' : PARADA[c].short).join(', ')].filter(Boolean).join(' · ');
+  const obs = [];
+  lines.forEach(l => l.machines.forEach(m => m.sides.forEach(sd => sd.vis.forEach(([i, st]) => { if (st.obs) obs.push(`<li><b>Máq. ${m.num}${sd.side} · Est. ${p2(i)}</b> — ${esc(st.obs)}</li>`); }))));
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Layout — Vulcanização (SOLAS)</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,"Segoe UI",Arial,Helvetica,sans-serif;color:#0F172A;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hd{display:flex;align-items:flex-end;gap:10px;padding-bottom:9px;border-bottom:3px solid #0B3A8C;margin-bottom:12px}
+.lg{width:30px;height:30px;border-radius:5px;background:#0B3A8C;color:#fff;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center}
+.hd h1{font-size:19px;font-weight:800;color:#0B3A8C;letter-spacing:-.02em;line-height:1.1}
+.hd .sb{font-size:9px;font-weight:600;color:#64748B;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+.hd .rt{margin-left:auto;text-align:right;font-size:10px;color:#64748B;font-style:italic;line-height:1.35}
+.hd .rt small{display:block;font-style:normal;font-size:8.5px}
+.gl-cards{margin-bottom:12px}
+.gl-line{padding:8px 8px 10px;margin-bottom:10px}
+.gl-st{min-height:48px}
+.obs{margin-top:6px;border-top:1px solid #CBD5E1;padding-top:6px;break-inside:avoid}.obs h2{font-size:10px;margin-bottom:3px;color:#475569;text-transform:uppercase;letter-spacing:.06em}.obs ul{columns:2;font-size:9px;padding-left:14px}
+${GL_CSS}
+body{--cw:37px;--cwmax:400px;--sl:11px}
+.gl-maqs{gap:4px}.gl-line{padding:7px 6px 8px}.gl-a{font-size:11.5px;letter-spacing:-.02em}.gl-t{font-size:10px}.gl-c{font-size:7.5px}.gl-maq-h{font-size:11.5px;padding:3px 7px}
+@page{size:A4 landscape;margin:7mm}
+</style></head><body>
+<div class="hd"><div class="lg">RF</div><div><h1>Layout — Vulcanização (SOLAS)</h1><div class="sb">GAP — Gestão de Adaptabilidade do Processo</div></div>
+<div class="rt">José David Queiroz Sousa<small>${esc(new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }))}${filtros ? ' · ' + esc(filtros) : ''}</small></div></div>
+<div class="gl-cards">${glCardsHTML(cnt)}</div>
+${glLinesHTML(lines, false)}
+${obs.length ? `<div class="obs"><h2>Observações</h2><ul>${obs.join('')}</ul></div>` : ''}
+</body></html>`;
+  try {
+    $('#printFrame')?.remove();
+    const fr = document.createElement('iframe');
+    fr.id = 'printFrame'; fr.setAttribute('aria-hidden', 'true');
+    fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0';
+    document.body.appendChild(fr);
+    const d = fr.contentWindow.document; d.open(); d.write(html); d.close();
+    setTimeout(() => { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast('Não foi possível abrir a impressão', { error: true }); } setTimeout(() => fr.remove(), 2000); }, 350);
+  } catch (e) { console.error(e); return toast('Falha ao preparar a impressão', { error: true }); }
+  addH('export', 'Impressão do layout', `Máq. ${cnt.maq} · Est. ${cnt.est}`); save();
+}
+
+/* ======================= QR ======================= */
+const LIBS = {
+  qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+  jsqr: 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'
+};
+const libPromises = {};
+function loadLib(name){
+  if (name === 'qrcode' && window.QRCode) return Promise.resolve();
+  if (name === 'jsqr' && window.jsQR) return Promise.resolve();
+  if (!libPromises[name]) libPromises[name] = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = LIBS[name]; s.async = true;
+    s.onload = res; s.onerror = () => { delete libPromises[name]; s.remove(); rej(new Error('sem internet')); };
+    document.head.appendChild(s);
+  });
+  return libPromises[name];
+}
+
+const QR_CHUNK = 1400;
+const Q = { mode: 'gen', share: 'all', recv: 'st', parts: [], idx: 0 };
+const R = { parts: {}, total: 0, fmt: 'MON1' }; // recepção de pacote em partes
+
+function packAll(){
+  // 24A[1=40769,PT/PTG,39,D;2=40731,PTONAT,34/35,M*2;3!MAN]~24B[...]
+  const clean = v => String(v || '').replace(/[~\[\];,=*]/g, '');
+  return Object.keys(S.machines).sort(sortKeys).map(key => {
+    const sts = stationsOf(key);
+    const parts = Object.keys(sts).sort((a, b) => a - b).map(i => {
+      const st = sts[i];
+      if (isParada(st)) return i + '!' + paradaCode(st);
+      if (!st.artigo && !st.tamanho) return '';
+      const t = st.tipo || 'S';
+      let tam = clean(st.tamanho); if (t === 'DM' && st.tamanho2 && st.tamanho2 !== st.tamanho) tam += '/' + clean(st.tamanho2);
+      let rec = `${i}=${clean(st.artigo)},${clean(st.cor)},${tam}`;
+      if (t === 'D') rec += ',D'; else if (t === 'DM') rec += ',M';
+      if (st.trocas) rec += '*' + st.trocas;
+      return rec;
+    }).filter(Boolean);
+    return parts.length ? `${key}[${parts.join(';')}]` : '';
+  }).filter(Boolean).join('~');
+}
+const b64 = { enc(bytes){ let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); },
+  dec(str){ const bin = atob(str); const o = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i); return o; } };
+async function deflate(str){
+  if (typeof CompressionStream === 'undefined') return null;
+  try { const buf = await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer(); return b64.enc(new Uint8Array(buf)); } catch (_) { return null; }
+}
+async function inflate(str){
+  if (typeof DecompressionStream === 'undefined') throw new Error('Este navegador não descompacta o QR');
+  return new Response(new Blob([b64.dec(str)]).stream().pipeThrough(new DecompressionStream('deflate'))).text();
+}
+async function buildShareParts(base, body){
+  if (!body) return [];
+  const z = await deflate(body);
+  const useZ = !!(z && z.length < body.length);
+  const payload = useZ ? z : body, prefix = base + (useZ ? '2' : '1');
+  const chunks = []; for (let i = 0; i < payload.length; i += QR_CHUNK) chunks.push(payload.slice(i, i + QR_CHUNK));
+  return chunks.map((c, i) => `${prefix}:${i + 1}/${chunks.length}:${c}`);
+}
+/* cadastro compacto para o QR: uma linha por artigo "ARTIGO|S|D|DM|CORES" */
+function cadPackText(){
+  return Object.keys(Cad.arts).sort().map(a => { const r = Cad.arts[a]; return [a, r.S.join(' '), r.D.join(' '), r.DM.join(' '), r.cores.join(',')].join('|'); }).join('\n');
+}
+function applyToken(key, est, rest, isPar){
+  key = up(key); if (!/^\d+[AB]$/.test(key) || !est || est < 1 || est > N) return false;
+  const prev = getSt(key, est);
+  if (isPar) { const c = up(rest) || 'MAN'; setSt(key, est, paradaRecord(prev, PARADA[c] ? c : 'MAN')); return true; }
+  let tipo = 'S', tr = 0, p = rest || '';
+  const star = p.lastIndexOf('*');
+  if (star >= 0 && /^\d+$/.test(p.slice(star + 1))) { tr = parseInt(p.slice(star + 1), 10) || 0; p = p.slice(0, star); }
+  const parts = p.includes('|') ? p.split('|') : p.split(',');
+  const art = up(parts[0]), cor = up(parts[1]);
+  let t1 = '', t2 = '';
+  if (p.includes('|')) { t1 = parts[2] || ''; t2 = parts[3] || ''; tipo = up(parts[4]) || 'S'; if (parts[5]) tr = parseInt(parts[5], 10) || tr; }
+  else {
+    const tf = parts[2] || '', tp = up(parts[3]);
+    if (tf.includes('/')) [t1, t2] = tf.split('/'); else t1 = tf;
+    tipo = tp === 'D' ? 'D' : (tp === 'M' || tp === 'DM') ? 'DM' : 'S';
+    if (tipo === 'D' && !t2) t2 = t1;
+  }
+  if (tipo !== 'D' && tipo !== 'DM') tipo = 'S';
+  setSt(key, est, stampRecord(prev, { artigo: art, cor, tipo, tamanho: t1 || '', tamanho2: t2 || '', trocas: tr, parada: false, supply: prev?.supply ?? null, ferramenta40594: prev?.ferramenta40594 || null, obs: prev?.obs || '' }));
+  return true;
+}
+function applyPacked(body){
+  let n = 0;
+  const tok = (key, t) => {
+    t = t.trim(); if (!t) return;
+    const bang = t.indexOf('!'), eq = t.indexOf('=');
+    if (bang > 0 && (eq < 0 || bang < eq)) { if (applyToken(key, parseInt(t.slice(0, bang), 10), t.slice(bang + 1), true)) n++; }
+    else if (eq > 0) { if (applyToken(key, parseInt(t.slice(0, eq), 10), t.slice(eq + 1), false)) n++; }
+  };
+  if (body.includes('[')) {
+    body.split('~').forEach(block => {
+      const ob = block.indexOf('['), cb = block.lastIndexOf(']'); if (ob < 0) return;
+      const key = block.slice(0, ob).trim();
+      (cb > ob ? block.slice(ob + 1, cb) : block.slice(ob + 1)).split(';').forEach(t => tok(key, t));
+    });
+    if (n) return n;
+  }
+  // formato antigo: 24A.1=...;24A.2!MAN
+  body.split(';').forEach(t => {
+    const bang = t.indexOf('!'), eq = t.indexOf('=');
+    const cut = (bang > 0 && (eq < 0 || bang < eq)) ? bang : eq; if (cut <= 0) return;
+    const head = t.slice(0, cut), dot = head.indexOf('.'); if (dot < 0) return;
+    tok(head.slice(0, dot).trim(), head.slice(dot + 1) + t.slice(cut));
+  });
+  return n;
+}
+function stationQrText(maq, lado, est){ return `MAQ:${p2(maq)},LADO:${lado},EST:${p2(est)}`; }
+
+/* ---- geração ---- */
+function enterQr(){
+  const maq = $('#qrMaq'), est = $('#qrEst');
+  if (!maq.options.length) {
+    maq.innerHTML = Array.from({ length: MACHINE_COUNT }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+    est.innerHTML = Array.from({ length: N }, (_, i) => `<option value="${i + 1}">${p2(i + 1)}</option>`).join('');
+    [maq, est, $('#qrLado')].forEach(s => s.addEventListener('change', renderQrGen));
+  }
+  setQrRecv(Q.recv);
+  setQrMode(Q.mode);
+}
+function setQrMode(m){
+  Q.mode = m;
+  $('#qrModeGen').classList.toggle('active', m === 'gen'); $('#qrModeScan').classList.toggle('active', m === 'scan');
+  $('#qrGen').hidden = m !== 'gen'; $('#qrScan').hidden = m !== 'scan';
+  if (m === 'gen') { scanStop(true); renderQrGen(); } else scanStart();
+}
+function setQrShare(m){
+  Q.share = m;
+  $('#qrShareAll').classList.toggle('active', m === 'all'); $('#qrShareSt').classList.toggle('active', m === 'st'); $('#qrShareCad').classList.toggle('active', m === 'cad');
+  renderQrGen();
+}
+function setQrRecv(m){
+  Q.recv = m;
+  $('#qrRecvSt').classList.toggle('active', m === 'st'); $('#qrRecvCad').classList.toggle('active', m === 'cad');
+  $('#qrRecvHelp').textContent = m === 'cad'
+    ? 'No outro aparelho: QR › Mostrar QR › Moldes e cores. Leia todas as partes; no fim você escolhe atualizar ou substituir o cadastro.'
+    : 'Lê o QR de todas as estações (QR › Mostrar QR › Estações) ou o QR fixo de uma estação colado na máquina.';
+}
+async function renderQrGen(){
+  if (currentPage !== 'qrcode' || Q.mode !== 'gen') return;
+  const mode = Q.share;
+  $('#qrStSel').hidden = mode !== 'st'; $('#qrQuickCard').hidden = mode !== 'st';
+  $('#qrHelp').textContent = {
+    all: 'Passa todas as estações deste aparelho para outro. No outro celular: QR › Ler QR › Importar estações (se houver mais de uma parte, leia todas).',
+    st: 'QR fixo de uma estação. Ao ler, o celular abre o registro direto nessa estação — dá para imprimir e colar na máquina.',
+    cad: 'Passa o cadastro de moldes (artigos, numeração, tipo de molde e cores) deste aparelho. No outro celular: QR › Ler QR › Importar moldes e cores.'
+  }[mode];
+  if (mode === 'st') {
+    const maq = +$('#qrMaq').value, lado = $('#qrLado').value, est = +$('#qrEst').value;
+    Q.parts = [stationQrText(maq, lado, est)]; Q.idx = 0;
+    const st = getSt(maq + lado, est);
+    $('#qrInfo').textContent = `Máquina ${maq} · Lado ${lado} · Estação ${p2(est)}${st ? (isParada(st) ? ' · parada' : st.artigo ? ` · ${artOf(st)} ${sizeText(st)}` : '') : ''}`;
+    renderQrQuick();
+    return showQrPart();
+  }
+  $('#qrInfo').textContent = 'Preparando…';
+  const parts = mode === 'cad' ? await buildShareParts('CAD', cadPackText()) : await buildShareParts('MON', packAll());
+  if (Q.share !== mode) return; // trocou de opção enquanto preparava
+  Q.parts = parts; Q.idx = 0;
+  if (!Q.parts.length) { $('#qrBox').innerHTML = `<p class="sub">${mode === 'cad' ? 'O cadastro de moldes está vazio.' : 'Nenhuma estação registrada para enviar.'}</p>`; $('#qrInfo').textContent = ''; $('#qrPayload').textContent = ''; $('#qrPartNav').hidden = true; return; }
+  const what = mode === 'cad' ? `${Object.keys(Cad.arts).length} artigos do cadastro` : `${stationCount(S)} estação(ões)`;
+  $('#qrInfo').textContent = `${what} · ${Q.parts.length === 1 ? 'um só QR' : Q.parts.length + ' QRs — mostre um de cada vez'}`;
+  showQrPart();
+}
+async function showQrPart(){
+  const text = Q.parts[Q.idx] || '';
+  $('#qrPartNav').hidden = Q.parts.length < 2;
+  $('#qrPartLbl').textContent = `${Q.idx + 1} / ${Q.parts.length}`;
+  $('#qrPayload').textContent = text.length > 160 ? text.slice(0, 160) + '…' : text;
+  const box = $('#qrBox');
+  try { await loadLib('qrcode'); }
+  catch (_) { box.innerHTML = '<p class="sub" style="text-align:center">Sem internet para carregar o gerador de QR.<br>Conecte e toque em “Mostrar QR” de novo.</p>'; return; }
+  box.innerHTML = ''; const w = document.createElement('div'); box.appendChild(w);
+  try { new QRCode(w, { text, width: 260, height: 260, colorDark: '#0B1F3A', colorLight: '#ffffff', correctLevel: text.length > 120 ? QRCode.CorrectLevel.L : QRCode.CorrectLevel.M }); }
+  catch (e) { box.innerHTML = '<p class="sub" style="color:var(--danger)">Não coube num QR. Use as setas para as partes.</p>'; }
+}
+function renderQrQuick(){
+  const keys = Object.keys(S.machines).sort(sortKeys);
+  $('#qrQuick').innerHTML = keys.length ? keys.flatMap(key => Object.keys(stationsOf(key)).sort((a, b) => a - b).map(i => {
+    const { maquina, lado } = parseKey(key);
+    return `<button data-act="qrFor" data-maq="${maquina}" data-lado="${lado}" data-i="${i}">${maquina}${lado}·${p2(i)}</button>`;
+  })).join('') : '<p class="sub">Nenhuma estação registrada ainda.</p>';
+}
+
+/* ---- leitura ---- */
+const Scan = { stream: null, devices: [], devIdx: -1, timer: 0, detector: null, lastText: '', lastAt: 0, busy: false };
+function scanMsg(html){ const m = $('#scanMsg'); m.hidden = !html; m.innerHTML = html || ''; }
+function scanUI(on){
+  $('#scanStartBtn').hidden = on; $('#scanStopBtn').hidden = !on;
+  $('#scanSwitchBtn').hidden = !on || Scan.devices.length < 2;
+  $('#scanFrame').hidden = !on; $('#scanIdle').hidden = on;
+}
+async function scanStart(){
+  if (Scan.stream) return;
+  if (!navigator.mediaDevices?.getUserMedia) { $('#scanIdle').textContent = 'Este aparelho/navegador não libera a câmera aqui. Abra o arquivo no Chrome do celular.'; return; }
+  $('#scanIdle').textContent = 'Ligando a câmera…';
+  try {
+    const video = { width: { ideal: 1280 }, height: { ideal: 720 } };
+    const dev = Scan.devices[Scan.devIdx];
+    if (dev) video.deviceId = { exact: dev.deviceId }; else video.facingMode = { ideal: 'environment' };
+    Scan.stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+  } catch (e) {
+    console.warn(e);
+    $('#scanIdle').textContent = e && e.name === 'NotAllowedError' ? 'Permissão da câmera negada. Libere nas configurações do navegador e toque em “Ligar câmera”.' : 'Não foi possível abrir a câmera.';
+    scanUI(false); return;
+  }
+  if (currentPage !== 'qrcode' || Q.mode !== 'scan') { scanStop(true); return; }
+  const v = $('#qrVideo'); v.srcObject = Scan.stream; try { await v.play(); } catch (_) {}
+  try {
+    const all = await navigator.mediaDevices.enumerateDevices();
+    Scan.devices = all.filter(d => d.kind === 'videoinput');
+    const cur = Scan.stream.getVideoTracks()[0]?.getSettings()?.deviceId;
+    const i = Scan.devices.findIndex(d => d.deviceId === cur); if (i >= 0) Scan.devIdx = i;
+  } catch (_) {}
+  if (!Scan.detector && 'BarcodeDetector' in window) {
+    try { const f = await BarcodeDetector.getSupportedFormats(); if (f.includes('qr_code')) Scan.detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (_) {}
+  }
+  if (!Scan.detector) { try { await loadLib('jsqr'); } catch (_) { scanMsg('Sem internet para carregar o leitor de QR.'); } }
+  scanUI(true);
+  scanMsg(R.total ? progressHTML() : 'Aponte para o QR');
+  Scan.timer = setInterval(scanTick, 140);
+}
+function scanStop(silent){
+  clearInterval(Scan.timer); Scan.timer = 0;
+  if (Scan.stream) { Scan.stream.getTracks().forEach(t => t.stop()); Scan.stream = null; }
+  const v = $('#qrVideo'); if (v) v.srcObject = null;
+  scanUI(false); if (!silent) scanMsg('');
+  $('#scanIdle').textContent = 'Câmera desligada';
+}
+async function scanSwitch(){
+  if (Scan.devices.length < 2) return;
+  Scan.devIdx = (Scan.devIdx + 1) % Scan.devices.length;
+  scanStop(true); await scanStart();
+}
+async function scanTick(){
+  const v = $('#qrVideo');
+  if (Scan.busy || !Scan.stream || v.readyState < 2) return;
+  Scan.busy = true;
+  try {
+    let text = '';
+    if (Scan.detector) { const r = await Scan.detector.detect(v); text = r[0]?.rawValue || ''; }
+    else if (window.jsQR) {
+      const c = $('#qrCanvas'), k = Math.min(1, 800 / (v.videoWidth || 800));
+      c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+      const ctx = c.getContext('2d', { willReadFrequently: true }); ctx.drawImage(v, 0, 0, c.width, c.height);
+      const r = jsQR(ctx.getImageData(0, 0, c.width, c.height).data, c.width, c.height, { inversionAttempts: 'dontInvert' });
+      text = r?.data || '';
+    }
+    if (text) {
+      const now = Date.now();
+      if (text !== Scan.lastText || now - Scan.lastAt > 2500) { Scan.lastText = text; Scan.lastAt = now; await handleQr(text); }
+    }
+  } catch (_) {}
+  Scan.busy = false;
+}
+function progressHTML(){
+  let dots = ''; for (let i = 1; i <= R.total; i++) dots += `<i class="${R.parts[i] != null ? 'got' : ''}"></i>`;
+  return `${R.fmt.startsWith('CAD') ? 'Moldes e cores' : 'Estações'}: recebidas ${Object.keys(R.parts).length} de ${R.total} partes — mostre a próxima<div class="part-dots">${dots}</div>`;
+}
+async function handleQr(raw){
+  raw = String(raw || '').trim(); if (!raw) return;
+  const m = raw.match(/^((?:MON|CAD)[12]):(\d+)\/(\d+):([\s\S]*)$/i);
+  if (m) {
+    const fmt = m[1].toUpperCase(), part = +m[2], total = +m[3];
+    if (R.total !== total || R.fmt !== fmt) { R.parts = {}; R.total = total; R.fmt = fmt; }
+    const kind = fmt.startsWith('CAD') ? 'cad' : 'st';
+    if (Q.recv !== kind) setQrRecv(kind); // leu um tipo diferente da aba: troca sozinho
+    if (R.parts[part] != null) return;
+    R.parts[part] = m[4];
+    if (navigator.vibrate) navigator.vibrate(60);
+    if (Object.keys(R.parts).length < total) { scanMsg(progressHTML()); return; }
+    scanStop(true);
+    let body = ''; for (let i = 1; i <= total; i++) body += R.parts[i];
+    const fmtNow = R.fmt; R.parts = {}; R.total = 0;
+    let packed = body;
+    if (fmtNow.endsWith('2')) { try { packed = await inflate(body); } catch (e) { toast('Não consegui abrir o QR compactado neste navegador', { error: true }); return; } }
+    if (fmtNow.startsWith('CAD')) { const { arts, erros } = cadParseText(packed); return cadImportArts(arts, erros, `QR (${total} parte${total > 1 ? 's' : ''})`); }
+    return importPacked(packed, total, fmtNow);
+  }
+  // QR de estação: MAQ:24,LADO:A,EST:03[,ART:...]
+  const map = {}; raw.split(',').forEach(p => { const i = p.indexOf(':'); if (i > 0) map[up(p.slice(0, i))] = p.slice(i + 1).trim(); });
+  const maq = parseInt(map.MAQ, 10), lado = up(map.LADO).slice(-1), est = parseInt(map.EST, 10);
+  if (!(maq >= 1 && maq <= MACHINE_COUNT && (lado === 'A' || lado === 'B') && est >= 1 && est <= N)) { scanMsg('Esse QR não é do Monitor'); return; }
+  scanStop(true);
+  if (navigator.vibrate) navigator.vibrate(60);
+  if (map.ART || map.PAR) { // QR antigo com dados
+    const key = maq + lado, prev = getSt(key, est);
+    if (map.PAR) setSt(key, est, paradaRecord(prev, PARADA[up(map.PAR)] ? up(map.PAR) : 'MAN'));
+    else { const t = up(map.TIPO); setSt(key, est, stampRecord(prev, { artigo: up(map.ART), cor: up(map.COR), tipo: t === 'D' || t === 'DUPLO' ? 'D' : (t === 'DM' || t === 'DUPLO_MISTO') ? 'DM' : 'S', tamanho: map.TAM || '', tamanho2: map.TAM2 || '', trocas: parseInt(map.TR || '0', 10) || 0, parada: false, obs: prev?.obs || '' })); }
+    save();
+  }
+  toast(`Máq. ${maq}${lado} · Est. ${p2(est)}`);
+  startSession(maq, lado, est);
+}
+async function importPacked(packed, total, fmt){
+  const choice = await ask({ title: 'Registros recebidos pelo QR', html: `<p>Chegaram os dados de outro aparelho (${total} parte${total > 1 ? 's' : ''}). O que fazer com os deste aparelho?</p>`,
+    actions: [{ label: 'Mesclar (o QR atualiza as mesmas estações)', value: 'merge', kind: 'bp' }, { label: 'Substituir tudo pelo QR', value: 'replace', kind: 'bo' }, { label: 'Cancelar', value: null, kind: 'bghost' }] });
+  if (!choice) return;
+  const snap = undoPoint();
+  if (choice === 'replace') S.machines = {};
+  const n = applyPacked(packed);
+  addH('import', 'Importação por QR', `${n} estações · ${total} parte(s) · ${fmt}`, { formato: fmt, partes: total, estacoes: n });
+  save(); showPage('consulta');
+  toast(`✓ ${n} estações recebidas`, { action: () => undoTo(snap, 'Importação desfeita') });
+}
+
+/* ======================= DADOS: EXPORTAR ======================= */
+function download(blob, name){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function safeJsonForScript(o){ return JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029'); }
+async function expHTML(){
+  const now = new Date(), name = `monitor_${fmtStamp(now)}.html`;
+  const doc = new DOMParser().parseFromString(PRISTINE_HTML, 'text/html');
+  const emb = doc.getElementById('embeddedStateScript');
+  const data = { machines: S.machines, history: S.history, changes: S.changes, layout: S.layout, exportId: makeExportId(now) + '_' + hashStr(JSON.stringify(S.machines)), exportedAtIso: now.toISOString() };
+  const cadEl = doc.getElementById('cadastroMoldes');
+  if (cadEl) { cadEl.textContent = '\n' + cadToText(Cad.arts) + '\n'; cadEl.setAttribute('data-atualizado', Cad.local?.updatedAt || Cad.fileAt || now.toISOString()); }
+  emb.textContent = 'window.__MONITOR_EXPORT_BUNDLE__=true;window.__MONITOR_EMBEDDED__=' + safeJsonForScript(data) + ';';
+  const blob = new Blob(['<!DOCTYPE html>\n' + doc.documentElement.outerHTML], { type: 'text/html;charset=utf-8' });
+  addH('export', 'Arquivo do app compartilhado', name, { arquivo: name, formato: 'html' }); save();
+  const file = typeof File !== 'undefined' ? new File([blob], name, { type: 'text/html' }) : null;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Monitor · Vulcanização' }); toast('✓ Arquivo pronto para enviar'); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  download(blob, name); toast('✓ Arquivo .html baixado — envie pelo WhatsApp ou e-mail');
+}
+function expJSON(){
+  const now = new Date(), name = `monitor_backup_${fmtStamp(now)}.json`;
+  const backup = { schemaName: JSON_SCHEMA_NAME, schemaVersion: SCHEMA_VERSION, exportedAtIso: now.toISOString(), sourceApp: SOURCE_APP, sourceFile: SOURCE_FILE, state: { machines: S.machines, history: S.history, changes: S.changes, layout: S.layout }, cadastro: Cad.local ? { arts: Cad.arts, updatedAt: Cad.local.updatedAt } : undefined };
+  download(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' }), name);
+  addH('export', 'Backup JSON', name, { arquivo: name, formato: 'json' }); save(); toast('✓ Backup baixado');
+}
+function expCSV(){
+  const now = new Date(), id = makeExportId(now), iso = now.toISOString();
+  let csv = SNAPSHOT_CSV_HEADER + '\n', n = 0;
+  Object.keys(S.machines).sort(sortKeys).forEach(key => {
+    const { maquina: num, lado: s } = parseKey(key);
+    Object.entries(stationsOf(key)).sort((a, b) => a[0] - b[0]).forEach(([i, st]) => {
+      // Estação parada não tem molde rodando: artigo/cor/tamanho saem vazios.
+      // (o app guarda o último setup só para facilitar a retomada — não é produção atual)
+      const est = Number(i), par = isParada(st);
+      const art = par ? '' : st.artigo, cor = par ? '' : st.cor, t1 = par ? '' : (st.tamanho || ''), t2 = par ? '' : (st.tamanho2 || '');
+      csv += [SNAPSHOT_SCHEMA_NAME, SCHEMA_VERSION, id, iso, SOURCE_APP, SOURCE_FILE, stationId(num, s, est), num, s, p2(est),
+        toCsv(par), toCsv(par ? paradaCode(st) : ''), toCsv(par ? PARADA[paradaCode(st)].label : ''), toCsv(par ? '' : (TIPO_CSV[st.tipo] || 'Simples')),
+        toCsv(art), toCsv(cor), toCsv(t1), toCsv(t2), toCsv(distinctSizes(t1, t2)), toCsv(par ? '' : (st.ferramenta40594 || '')), toCsv(st.trocas || 0),
+        toCsv(st.createdAtIso), toCsv(st.updatedAtIso)].join(';') + '\n';
+      n++;
+    });
+  });
+  if (!n) return toast('Nenhuma estação para exportar');
+  download(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), `snapshot_estacoes_${fmtStamp(now)}.csv`);
+  addH('export', 'Planilha CSV', `${n} estações`); save(); toast(`✓ Planilha com ${n} estações baixada`);
+}
+function eventRow(h){
+  if (!h || !['troca', 'parada', 'retomada', 'exclusao'].includes(h.type)) return null;
+  let leg = {};
+  if (h.type === 'troca' && (h.maquina === undefined || h.artigo_de === undefined)) { // registros antigos só tinham título/detalhe
+    const mt = String(h.title || '').replace('—', '-').match(/Est\.(\d+)\s*-\s*Maq\.(\d+)([AB])/i);
+    const parts = String(h.detail || '').split('→');
+    const split = t => { const r = String(t || '').trim(), i = r.indexOf('/'); return i < 0 ? [r, ''] : [r.slice(0, i).trim(), r.slice(i + 1).trim()]; };
+    if (mt) leg = { estacao: +mt[1], maquina: +mt[2], lado: mt[3].toUpperCase() };
+    if (parts.length === 2) { const [a1, t1] = split(parts[0]), [a2, t2] = split(parts[1]); Object.assign(leg, { artigo_de: a1, tamanho_de: t1, artigo_para: a2, tamanho_para: t2 }); }
+  }
+  let iso = h.iso;
+  if (!iso) { const dm = String(h.date || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/), tm = String(h.time || '').match(/^(\d{2}):(\d{2})/); iso = dm && tm ? `${dm[3]}-${dm[2]}-${dm[1]}T${tm[1]}:${tm[2]}:00` : ''; }
+  const g = k => h[k] ?? leg[k] ?? '';
+  return { type: h.type, iso, maquina: g('maquina'), lado: g('lado'), estacao: g('estacao'), pc: h.parada_motivo_code || '', pm: h.parada_motivo || '', ad: g('artigo_de'), td: g('tamanho_de'), ap: g('artigo_para'), tp: g('tamanho_para'), det: h.detail || '' };
+}
+function expEvents(){
+  const now = new Date(), id = makeExportId(now), cutoff = now.getTime() - 864e5;
+  const rows = S.history.map(eventRow).filter(r => r && Date.parse(r.iso) >= cutoff).sort((a, b) => Date.parse(a.iso) - Date.parse(b.iso));
+  let csv = EVENTS_CSV_HEADER + '\n';
+  rows.forEach((r, i) => {
+    const est = r.estacao === '' ? '' : p2(r.estacao);
+    const sid = r.maquina !== '' && r.lado && est ? `${r.maquina}-${r.lado}-${est}` : '';
+    csv += [EVENTS_SCHEMA_NAME, SCHEMA_VERSION, id, `${id}_${p4(i + 1)}`, toCsv(r.type), toCsv(r.iso), toCsv(sid), toCsv(r.maquina), toCsv(r.lado), toCsv(est), toCsv(r.pc), toCsv(r.pm), toCsv(r.ad), toCsv(r.td), toCsv(r.ap), toCsv(r.tp), toCsv(r.det)].join(';') + '\n';
+  });
+  const name = `trocas_24h_${fmtStamp(now)}.csv`;
+  download(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), name);
+  addH('export', 'Eventos 24h CSV', `${rows.length} eventos`, { arquivo: name, eventos: rows.length }); save();
+  toast(`✓ ${rows.length} evento(s) das últimas 24h`);
+}
+
+/* ======================= DADOS: IMPORTAR ======================= */
+function readFile(input, cb){
+  const file = input.files && input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => { input.value = ''; cb(String(r.result || ''), file.name); };
+  r.onerror = () => toast('Não foi possível ler o arquivo', { error: true });
+  r.readAsText(file, 'utf-8');
+}
+async function importJSON(text, name){
+  let state, cad = null;
+  try {
+    const raw = JSON.parse(text); state = normalizeState(raw?.state ?? raw);
+    if (raw?.cadastro?.arts && typeof raw.cadastro.arts === 'object') {
+      cad = {}; Object.entries(raw.cadastro.arts).forEach(([a, r]) => { const c = cadCheck(up(a), r || {}, (r?.cores || []).join(',')); if (!c.erros.length) cad[up(a)] = c.rec; });
+      if (!Object.keys(cad).length) cad = null;
+    }
+  } catch (_) { return toast('Esse arquivo não é um backup válido', { error: true }); }
+  if (!hasData(state)) return toast('O backup não tem registros', { error: true });
+  const choice = await ask({ title: 'Restaurar backup', html: `<p><b>${esc(name)}</b> tem ${stationCount(state)} estação(ões) e ${state.history.length} evento(s) no histórico.</p>`,
+    actions: [{ label: 'Substituir os dados deste aparelho', value: 'replace', kind: 'bp' }, { label: 'Mesclar com os atuais', value: 'merge', kind: 'bo' }, { label: 'Cancelar', value: null, kind: 'bghost' }] });
+  if (!choice) return;
+  const snap = undoPoint();
+  S = choice === 'merge' ? mergeStates(S, state) : state;
+  addH('import', choice === 'merge' ? 'Backup mesclado' : 'Backup restaurado', name, { arquivo: name, formato: 'json' });
+  if (cad) cadSaveLocal(cad, 'Cadastro de moldes restaurado do backup');
+  applyLines(S.layout); persistNow(); showPage('consulta');
+  toast('✓ Backup ' + (choice === 'merge' ? 'mesclado' : 'restaurado'), { action: () => undoTo(snap, 'Restauração desfeita') });
+}
+function parseCsvLine(line, sep){
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; continue; }
+    if (!q && ch === sep) { out.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  out.push(cur); return out.map(s => s.trim());
+}
+async function importCSV(text, name){
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return toast('Planilha vazia', { error: true });
+  const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+  const head = parseCsvLine(lines[0], sep).map(h => h.toLowerCase());
+  const c = n => head.indexOf(n);
+  const I = { maq: c('maquina'), lado: c('lado'), est: c('estacao'), par: c('parada'), pc: c('parada_motivo_code'), tipo: c('tipo_molde'), art: c('artigo'), cor: c('cor'), t1: c('tamanho_1'), t2: c('tamanho_2'), ferr: c('ferramenta_40594'), tr: c('trocas_acumuladas'), cr: c('station_created_at_iso'), upd: c('station_updated_at_iso') };
+  if (I.maq < 0 || I.lado < 0 || I.est < 0) return toast('A planilha precisa das colunas maquina, lado e estacao', { error: true, ms: 4000 });
+  const rows = lines.slice(1).map(l => parseCsvLine(l, sep));
+  const valid = rows.filter(r => parseInt(r[I.maq], 10) && /^[AB]$/i.test(String(r[I.lado] || '').trim().slice(-1)) && parseInt(r[I.est], 10) >= 1 && parseInt(r[I.est], 10) <= N);
+  if (!valid.length) return toast('Nenhuma linha válida na planilha', { error: true });
+  if (!await confirmBox('Importar planilha', `${esc(name)}: ${valid.length} estação(ões). As estações da planilha substituem as mesmas máquina/lado/estação deste aparelho; as demais ficam como estão.`, 'Importar')) return;
+  const snap = undoPoint();
+  const v = (r, i) => i >= 0 ? (r[i] || '') : '';
+  valid.forEach(r => {
+    const key = parseInt(r[I.maq], 10) + up(v(r, I.lado)).slice(-1), est = parseInt(r[I.est], 10), prev = getSt(key, est);
+    const isPar = ['true', '1', 'sim', 'yes', 'verdadeiro'].includes(v(r, I.par).toLowerCase());
+    let rec;
+    if (isPar) { const code = up(v(r, I.pc)); rec = paradaRecord(prev, PARADA[code] ? code : 'MAN'); }
+    else {
+      const t = v(r, I.tipo).toLowerCase();
+      rec = stampRecord(prev, { artigo: up(v(r, I.art)), cor: up(v(r, I.cor)), tipo: t.includes('misto') ? 'DM' : t.includes('duplo') ? 'D' : 'S', tamanho: v(r, I.t1), tamanho2: v(r, I.t2), trocas: parseInt(v(r, I.tr) || '0', 10) || 0, parada: false, supply: prev?.supply ?? null, ferramenta40594: v(r, I.ferr) || null, obs: prev?.obs || '' });
+    }
+    if (v(r, I.cr)) rec.createdAtIso = v(r, I.cr);
+    if (v(r, I.upd)) rec.updatedAtIso = v(r, I.upd);
+    setSt(key, est, rec);
+  });
+  addH('import', 'Planilha importada', `${name} · ${valid.length} estações`, { arquivo: name, formato: 'csv', linhas: valid.length });
+  save(); showPage('consulta');
+  toast(`✓ ${valid.length} estações importadas`, { action: () => undoTo(snap, 'Importação desfeita') });
+}
+async function clearAll(){
+  const s = computeStats();
+  if (!s.est) return toast('Não há estações para limpar');
+  const choice = await ask({ title: 'Limpar todas as máquinas?', html: `<p>Apaga <b>${s.est} estação(ões)</b> de ${s.maq} máquina(s) deste aparelho. Dá para desfazer logo em seguida, mas é bom baixar um backup antes.</p>
+    <label class="check"><input type="checkbox" id="clrHist"> Apagar também o histórico de eventos</label>`,
+    actions: [{ label: 'Apagar estações', value: 'go', kind: 'bdanger' }, { label: 'Baixar backup primeiro', value: 'backup', kind: 'bo' }, { label: 'Cancelar', value: null, kind: 'bghost' }] });
+  const alsoHist = !!document.getElementById('clrHist')?.checked;
+  if (choice === 'backup') return expJSON();
+  if (choice !== 'go') return;
+  const snap = undoPoint();
+  S.machines = {}; if (alsoHist) S.history = [];
+  sess.maq = null; sess.side = null; setLast(null);
+  addH('system', 'Limpeza de dados', alsoHist ? 'Máquinas e histórico apagados' : 'Máquinas apagadas · histórico mantido', { maquinas: s.maq, estacoes: s.est });
+  save(); rerenderAll();
+  toast('Dados das máquinas apagados', { action: () => undoTo(snap, 'Dados restaurados'), ms: 10000 });
+}
+
+/* ======================= CADASTRO DE MOLDES (tela) ======================= */
+const CE = { view: 'list', art: null, isNew: false, q: '', fromForm: false };
+function cadSummary(r){
+  const n = CAD_COLS.reduce((t, k) => t + r[k].length, 0);
+  const tipos = CAD_COLS.filter(k => r[k].length).map(k => TIPO_LABEL[k]);
+  return n ? `${n} molde${n > 1 ? 's' : ''} · ${tipos.join(', ')} · ${r.cores.length ? r.cores.length + ' cor' + (r.cores.length > 1 ? 'es' : '') : 'sem cores'}` : `<span class="none">sem tamanhos</span> · ${r.cores.length} cor(es)`;
+}
+function renderCadInfo(){
+  const arts = Object.keys(Cad.arts), nc = arts.filter(a => Cad.arts[a].cores.length).length;
+  let h = `<p><b>${arts.length}</b> artigos · <b>${nc}</b> com cores cadastradas</p>`;
+  h += Cad.local
+    ? `<div class="cad-note">Editado neste aparelho em ${esc(fmtDateTime(Cad.local.updatedAt))}. Para os outros receberem, use <b>Compartilhar app com os dados</b> — o arquivo sai com o cadastro novo.</div>`
+    : `<div class="cad-note">Usando o cadastro que está dentro do arquivo HTML.</div>`;
+  if (Cad.erros.length) h += `<div class="cad-note warn"><details><summary>${Cad.erros.length} linha(s) do cadastro no HTML foram ignoradas por erro</summary><ul>${Cad.erros.slice(0, 8).map(e => `<li>${esc(e)}</li>`).join('')}</ul></details></div>`;
+  $('#cadInfo').innerHTML = h;
+  $('#cadRevert').hidden = !Cad.local;
+}
+function cadOpen(art, isNew, fromForm){
+  CE.fromForm = !!fromForm;
+  if (art || isNew) { CE.view = 'edit'; CE.art = art || ''; CE.isNew = !!isNew; } else { CE.view = 'list'; }
+  renderCad(); openSheet('cadSheet');
+  setTimeout(() => (CE.view === 'list' ? $('#cadQ') : ($('#ceArt') || $('#ceS')))?.focus(), 80);
+}
+function renderCad(){
+  const body = $('#cadBody');
+  const close = `<button class="icon-btn" data-act="cadClose" aria-label="Fechar">${ICON.x}</button>`;
+  if (CE.view === 'list') {
+    const q = up(CE.q);
+    const keys = Object.keys(Cad.arts).sort().filter(a => !q || a.includes(q) || Cad.arts[a].cores.some(c => c.includes(q)));
+    body.innerHTML = `<div class="sheet-h"><h2 class="grow" id="cadTitle">Cadastro de moldes</h2>${close}</div>
+      <div class="row" style="margin-bottom:10px"><input class="input grow" id="cadQ" placeholder="Buscar artigo ou cor" autocomplete="off" value="${esc(CE.q)}"><button class="btn bp" data-act="cadNew">+ Novo</button></div>
+      <p class="cad-help">${keys.length} de ${Object.keys(Cad.arts).length} artigos. Toque num artigo para editar.</p>
+      <div class="cad-list">${keys.map(a => `<button class="cad-row" data-act="cadEdit" data-art="${esc(a)}"><b>${esc(a)}</b><span>${cadSummary(Cad.arts[a])}</span>${ICON.chev}</button>`).join('') || '<div class="empty"><p>Nenhum artigo encontrado.</p></div>'}</div>`;
+    $('#cadQ').addEventListener('input', e => { CE.q = e.target.value; const pos = e.target.selectionStart; renderCad(); const i = $('#cadQ'); i.focus(); try { i.setSelectionRange(pos, pos); } catch (_) {} });
+    return;
+  }
+  const r = Cad.arts[CE.art] || { S: [], D: [], DM: [], cores: [] };
+  body.innerHTML = `<div class="sheet-h"><button class="icon-btn" data-act="cadBack" aria-label="Voltar para a lista">${ICON.back}</button><h2 class="grow" id="cadTitle">${CE.isNew ? 'Novo artigo' : 'Artigo <span class="mono">' + esc(CE.art) + '</span>'}</h2>${close}</div>
+    ${CE.isNew ? `<label class="field"><span>Artigo</span><input class="input mono" id="ceArt" inputmode="numeric" autocomplete="off" value="${esc(CE.art || '')}" placeholder="Ex.: 40769"></label>` : ''}
+    <label class="field"><span>Simples</span><input class="input mono" id="ceS" autocomplete="off" spellcheck="false" value="${esc(r.S.join(' '))}" placeholder="Ex.: 43 44"></label>
+    <label class="field"><span>Duplo</span><input class="input mono" id="ceD" autocomplete="off" spellcheck="false" value="${esc(r.D.join(' '))}" placeholder="Ex.: 36 37 38"></label>
+    <label class="field"><span>Duplo misto</span><input class="input mono" id="ceDM" autocomplete="off" spellcheck="false" value="${esc(r.DM.join(' '))}" placeholder="Ex.: 45/46"></label>
+    <p class="cad-help">Tamanhos separados por espaço. Dois tamanhos no mesmo molde: junte com barra (34/35). O mesmo tamanho pode estar num par e também sozinho — ex.: 34/35 e 35 são dois moldes diferentes.</p>
+    <label class="field"><span>Cores</span><textarea class="input" id="ceCores" rows="3" autocapitalize="characters" spellcheck="false" placeholder="Ex.: PT/PTG, NAT/NT">${esc(r.cores.join(', '))}</textarea></label>
+    <p class="cad-help" style="margin-top:-8px">Separe as cores por vírgula. Elas aparecem como sugestão no registro.</p>
+    <div id="ceErr"></div>
+    <div class="cad-prev"><span>Como aparece na escolha de tamanho</span><div class="size-grid" id="cePrev"></div></div>
+    <div class="form-actions">
+      ${CE.isNew ? '' : `<button class="icon-btn danger" data-act="cadDel" aria-label="Excluir artigo" title="Excluir artigo" style="height:46px;width:46px">${ICON.trash}</button>`}
+      <button class="btn bo" data-act="cadBack">Cancelar</button>
+      <button class="btn bp" data-act="cadSave">Salvar artigo</button>
+    </div>`;
+  $$('#ceS,#ceD,#ceDM,#ceCores,#ceArt', body).forEach(i => i.addEventListener('input', cadPreview));
+  cadPreview();
+}
+function cadRead(){
+  const art = CE.isNew ? up($('#ceArt').value).replace(/\s+/g, '') : CE.art;
+  return { art, ...cadCheck(art, { S: $('#ceS').value, D: $('#ceD').value, DM: $('#ceDM').value }, $('#ceCores').value) };
+}
+function cadPreview(){
+  const { art, rec, erros } = cadRead();
+  const e = [...erros];
+  if (CE.isNew && art && Cad.arts[art]) e.push(`O artigo ${art} já existe — volte à lista e toque nele para editar`);
+  $('#ceErr').innerHTML = e.length && (art || !CE.isNew) ? `<div class="cad-err">${e.map(esc).join('<br>')}</div>` : '';
+  const toks = CAD_COLS.flatMap(k => rec[k].map(t => ({ t, k }))).sort((x, y) => sizeKey(x.t) - sizeKey(y.t) || x.t.length - y.t.length);
+  $('#cePrev').innerHTML = toks.length ? toks.map(({ t, k }) => `<div class="size-btn${t.includes('/') ? ' grp' : ''}" title="${TIPO_LABEL[k]}">${esc(t)}<small>${TIPO_LABEL[k]}</small></div>`).join('') : '<p class="sub" style="grid-column:1/-1">Nenhum tamanho ainda.</p>';
+}
+function cadSave(){
+  const { art, rec, erros } = cadRead();
+  if (!art) { $('#ceArt')?.focus(); return toast('Informe o número do artigo', { error: true }); }
+  if (erros.length) return toast('Corrija os campos em vermelho', { error: true });
+  if (CE.isNew && Cad.arts[art]) return toast(`O artigo ${art} já existe`, { error: true });
+  if (!CAD_COLS.some(k => rec[k].length) && !rec.cores.length) return toast('Informe ao menos um tamanho ou uma cor', { error: true });
+  const prev = clone(Cad.arts), arts = clone(Cad.arts);
+  arts[art] = rec;
+  cadSaveLocal(arts, `Artigo ${art} ${CE.isNew ? 'incluído' : 'alterado'}`);
+  toast(`✓ Artigo ${art} salvo`, { action: () => { cadSaveLocal(prev, `Alteração do artigo ${art} desfeita`); cadAfterChange(); toast('Alteração desfeita'); } });
+  cadAfterChange();
+  if (CE.fromForm) { closeSheet('cadSheet'); if (F) { F.d.art = art; const i = $('#fArt', F.root); if (i) i.value = art; refreshArtUI(true); } return; }
+  CE.view = 'list'; CE.q = ''; renderCad();
+}
+async function cadDelete(){
+  const art = CE.art;
+  const usados = [];
+  Object.entries(S.machines).forEach(([k, m]) => Object.entries(m.stations || {}).forEach(([i, st]) => { if (artOf(st) === art) usados.push(`${k}·${p2(i)}`); }));
+  if (!await confirmBox(`Excluir o artigo ${art}?`, usados.length ? `Ele está registrado em ${usados.length} estação(ões) (${esc(usados.slice(0, 6).join(', '))}${usados.length > 6 ? '…' : ''}). Os registros continuam, mas o artigo não aparece mais para novos registros.` : 'Ele deixa de aparecer no registro.', 'Excluir artigo', true)) return;
+  const prev = clone(Cad.arts), arts = clone(Cad.arts);
+  delete arts[art];
+  cadSaveLocal(arts, `Artigo ${art} excluído`);
+  toast(`Artigo ${art} excluído`, { action: () => { cadSaveLocal(prev, `Exclusão do artigo ${art} desfeita`); cadAfterChange(); toast('Artigo restaurado'); } });
+  cadAfterChange(); CE.view = 'list'; renderCad();
+}
+function cadAfterChange(){ if (currentPage === 'exportar') { renderCadInfo(); renderHistory(); } if ($('#cadSheet').classList.contains('open') && CE.view === 'list') renderCad(); if (F && F.root && document.body.contains(F.root)) refreshArtUI(false); }
+async function cadRevert(){
+  if (!await confirmBox('Voltar ao cadastro do arquivo?', 'As alterações feitas neste aparelho no cadastro de moldes são descartadas.', 'Voltar ao do arquivo', true)) return;
+  const prev = clone(Cad.arts);
+  cadSaveLocal(clone(Cad.fileArts), 'Cadastro voltou ao do arquivo');
+  cadAfterChange();
+  toast('Cadastro do arquivo restaurado', { action: () => { cadSaveLocal(prev, 'Volta ao cadastro do arquivo desfeita'); cadAfterChange(); } });
+}
+/* planilha do cadastro: artigo;simples;duplo;duplo_misto;cores */
+function cadCsvOut(){
+  const now = new Date();
+  let csv = 'artigo;simples;duplo;duplo_misto;cores\n';
+  Object.keys(Cad.arts).sort().forEach(a => { const r = Cad.arts[a]; csv += [a, r.S.join(' '), r.D.join(' '), r.DM.join(' '), r.cores.join(', ')].join(';') + '\n'; });
+  download(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }), `cadastro_moldes_${fmtStamp(now)}.csv`);
+  toast('✓ Planilha do cadastro baixada');
+}
+async function cadCsvIn(text, name){
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return toast('Planilha vazia', { error: true });
+  const sep = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length ? ';' : ',';
+  const key = h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+  const head = parseCsvLine(lines[0], sep).map(key);
+  const col = (...names) => head.findIndex(h => names.includes(h));
+  const I = { art: col('artigo', 'modelo'), S: col('simples'), D: col('duplo'), DM: col('duplomisto', 'misto'), cores: col('cores', 'cor') };
+  if (I.art < 0) return toast('A planilha precisa da coluna "artigo"', { error: true });
+  const arts = {}, erros = [];
+  lines.slice(1).forEach((l, n) => {
+    const r = parseCsvLine(l, sep), v = i => i >= 0 ? (r[i] || '') : '';
+    const art = up(v(I.art)).replace(/\s+/g, ''); if (!art) return;
+    const { rec, erros: e } = cadCheck(art, { S: v(I.S), D: v(I.D), DM: v(I.DM) }, v(I.cores));
+    if (e.length) erros.push(`Linha ${n + 2}: ${e.join('; ')}`); else arts[art] = rec;
+  });
+  return cadImportArts(arts, erros, name);
+}
+async function cadImportArts(arts, erros, name){
+  const n = Object.keys(arts).length;
+  if (!n) return toast('Nenhum artigo válido para importar', { error: true, ms: 4000 });
+  const novos = Object.keys(arts).filter(a => !Cad.arts[a]).length;
+  const choice = await ask({ title: 'Importar cadastro de moldes', html: `<p><b>${esc(name)}</b>: ${n} artigo(s)${novos ? `, ${novos} novo(s)` : ''}.</p>${erros.length ? `<div class="cad-err">${erros.length} linha(s) com erro serão ignoradas:<br>${erros.slice(0, 5).map(esc).join('<br>')}${erros.length > 5 ? '<br>…' : ''}</div>` : ''}`,
+    actions: [{ label: 'Atualizar só esses artigos', value: 'merge', kind: 'bp' }, { label: 'Substituir o cadastro inteiro', value: 'replace', kind: 'bo' }, { label: 'Cancelar', value: null, kind: 'bghost' }] });
+  if (!choice) return;
+  const prev = clone(Cad.arts);
+  cadSaveLocal(choice === 'replace' ? arts : { ...clone(Cad.arts), ...arts }, `${name}: ${n} artigos (${choice === 'replace' ? 'substituiu tudo' : 'atualizou'})`);
+  cadAfterChange();
+  toast(`✓ ${n} artigos importados`, { action: () => { cadSaveLocal(prev, 'Importação do cadastro desfeita'); cadAfterChange(); toast('Importação desfeita'); } });
+}
+$('#cadCsvInput').addEventListener('change', e => readFile(e.target, cadCsvIn));
+$('#cadSheet').addEventListener('click', e => { if (e.target === e.currentTarget) closeSheet('cadSheet'); });
+
+/* ======================= ORDEM DAS MÁQUINAS ======================= */
+let ORD = null, ordMoved = 0;
+function ordOpen(){ ORD = clone(LAYOUT_LINES); ordMoved = 0; renderOrd(); openSheet('ordSheet'); }
+function renderOrd(){
+  const names = ORD.map(l => l.name);
+  $('#ordBody').innerHTML = ORD.map((l, li) => `<div class="ord-line"><div class="ord-line-h">${esc(l.name)}<span>${l.machines.length} máq.</span></div>
+    ${l.machines.length ? l.machines.map((m, i) => `<div class="ord-row${m === ordMoved ? ' moved' : ''}">
+      <span class="ord-pos">${i + 1}º</span><b>Máq. ${m}</b>
+      <button class="icon-btn" data-act="ordMove" data-l="${li}" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir máquina ${m}"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg></button>
+      <button class="icon-btn" data-act="ordMove" data-l="${li}" data-i="${i}" data-d="1" ${i === l.machines.length - 1 ? 'disabled' : ''} aria-label="Descer máquina ${m}"><svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <select class="input" data-ordline="${m}" aria-label="Linha da máquina ${m}">${names.map((n, k) => `<option value="${k}"${k === li ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>
+    </div>`).join('') : '<div class="ord-empty">Nenhuma máquina nesta linha.</div>'}</div>`).join('');
+}
+function ordMove(li, i, d){
+  const ms = ORD[li].machines, j = i + d; if (j < 0 || j >= ms.length) return;
+  [ms[i], ms[j]] = [ms[j], ms[i]]; ordMoved = ms[j]; renderOrd();
+}
+function ordToLine(m, to){
+  ORD.forEach(l => l.machines = l.machines.filter(x => x !== m));
+  ORD[to].machines.push(m); ordMoved = m; renderOrd();
+  setTimeout(() => $('.ord-row.moved')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 30);
+}
+function ordSave(){
+  S.layout = cleanLines(ORD); applyLines(S.layout);
+  addH('system', 'Ordem das máquinas alterada', LAYOUT_LINES.map(l => `${l.name}: ${l.machines.join(', ')}`).join(' | '));
+  save(); closeSheet('ordSheet'); rerenderAll(); toast('✓ Ordem das máquinas salva');
+}
+function ordReset(){ ORD = clone(DEFAULT_LINES); ordMoved = 0; renderOrd(); toast('Ordem padrão carregada — toque em Salvar para aplicar'); }
+document.addEventListener('change', e => { const m = e.target.dataset && e.target.dataset.ordline; if (m) ordToLine(+m, +e.target.value); });
+$('#ordSheet').addEventListener('click', e => { if (e.target === e.currentTarget) closeSheet('ordSheet'); });
+
+/* ======================= HISTÓRICO ======================= */
+const H_TYPES = { all: 'Tudo', troca: 'Trocas', parada: 'Paradas', retomada: 'Retomadas', registro: 'Finalizações', exclusao: 'Exclusões', dados: 'Import./export.' };
+const H_COLOR = { troca: 'r-VOL', parada: 'r-MAN', retomada: 'r-OK', registro: 'r-OK', exclusao: 'r-FAB', import: 'r-INT', export: 'r-INT', system: 'r-INT' };
+let hFilter = 'all', hLimit = 40;
+function renderHistory(){
+  renderCadInfo();
+  const counts = {}; S.history.forEach(h => { const t = ['import', 'export', 'system'].includes(h.type) ? 'dados' : h.type; counts[t] = (counts[t] || 0) + 1; });
+  $('#hChips').innerHTML = Object.entries(H_TYPES).filter(([k]) => k === 'all' || counts[k]).map(([k, l]) => `<button class="fchip${hFilter === k ? ' on' : ''}" data-act="hf" data-v="${k}" style="--c:var(--blue);--cb:var(--blue-l)">${l}${k !== 'all' ? ` <b>${counts[k]}</b>` : ''}</button>`).join('');
+  const list = S.history.filter(h => hFilter === 'all' || h.type === hFilter || (hFilter === 'dados' && ['import', 'export', 'system'].includes(h.type)));
+  $('#histList').innerHTML = list.length ? list.slice(0, hLimit).map(h => `<div class="hi ${H_COLOR[h.type] || 'r-NONE'}"><i class="dot"></i><div class="grow"><b>${esc(h.title)}</b><span>${esc(h.detail)}</span><time>${esc(h.date || '')} ${esc(h.time || '')}</time></div></div>`).join('') : '<div class="empty"><p>Nada registrado ainda.</p></div>';
+  $('#histMore').hidden = list.length <= hLimit;
+}
+
+/* ======================= EVENTOS (delegação) ======================= */
+document.addEventListener('click', e => {
+  const nav = e.target.closest('[data-page]'); if (nav) return showPage(nav.dataset.page);
+  const go = e.target.closest('[data-page-go]'); if (go) return showPage(go.dataset.pageGo);
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, D = el.dataset;
+  switch (a) {
+    case 'pickMaq': pickedMaq = +D.maq; $$('#machineGrid .mb').forEach(b => b.classList.toggle('sel', +b.dataset.maq === pickedMaq)); updateSidePick(); break;
+    case 'start': if (pickedMaq) startSession(pickedMaq, D.side); break;
+    case 'continue': { const l = getLast(); if (l) startSession(l.maq, l.side, l.est); break; }
+    case 'goParadas': filt.c = new Set(REASONS); showPage('consulta'); break;
+    case 'leave': sess.maq = null; sess.side = null; renderRegistro(); break;
+    case 'finalize': endSession(true); break;
+    case 'jump': sess.cur = +D.i; renderSession(); setTimeout(() => $('#fArt')?.focus(), 50); break;
+    case 'copyPrev': { const p = getSt(F.key, F.idx - 1); if (!p) break; F.d = { ...F.d, art: p.artigo, cor: p.cor || '', tam: p.tamanho || '', tam2: p.tamanho2 || '', tipo: p.tipo || 'S', ferr: p.ferramenta40594 || null }; F.d.mold = Molde.find(F.d.art, F.d.tam, F.d.tam2, F.d.tipo)?.id || ''; readObsOnly(); renderForm(); $('[data-act="saveForm"]', F.root)?.focus(); break; }
+    case 'cor': { F.d.cor = D.v; const ci = $('#fCor', F.root); if (ci) ci.value = D.v; markSug(); if (!F.d.tam) openSize(); break; }
+    case 'ferr': F.d.ferr = F.d.ferr === D.v ? null : D.v; refreshArtUI(false); break;
+    case 'pickSize': readForm(); openSize(); break;
+    case 'size': pickSize(D.v); break;
+    case 'sizeClear': if (F) { F.d.tam = ''; F.d.tam2 = ''; F.d.tipo = 'S'; F.d.mold = ''; closeSheet('sizeSheet'); refreshArtUI(false); } break;
+    case 'sizeClose': closeSheet('sizeSheet'); break;
+    case 'showObs': $('#obsField', F.root).hidden = false; el.remove(); $('#fObs', F.root).focus(); break;
+    case 'unpara': readObsOnly(); F.unpara = true; renderForm(); $('#fArt', F.root)?.focus(); break;
+    case 'parada': markParada(D.r); break;
+    case 'saveForm': saveForm(); break;
+    case 'delSt': deleteStation(F.key, F.idx, true); break;
+    case 'closeEdit': closeEdit(); break;
+    case 'edit': openEdit(D.key, D.i); break;
+    case 'delMaq': deleteMachine(+D.maq); break;
+    case 'startFrom': pickedMaq = +D.maq; showPage('registro'); break;
+    case 'togLine': { const n = D.l; closedLines.has(n) ? closedLines.delete(n) : closedLines.add(n); el.closest('.lgroup').classList.toggle('closed'); el.setAttribute('aria-expanded', !closedLines.has(n)); break; }
+    case 'fchip': { const f = filt[D.p]; f.has(D.v) ? f.delete(D.v) : f.add(D.v); D.p === 'c' ? renderConsulta() : renderLayout(); break; }
+    case 'fclear': { const pre = D.p; filt[D.p].clear(); ['Art', 'Cor', 'Tam'].forEach(x => $('#' + pre + x).value = ''); D.p === 'c' ? renderConsulta() : renderLayout(); break; }
+    case 'print': printLayout(); break;
+    case 'ordOpen': ordOpen(); break;
+    case 'cadOpen': cadOpen(); break;
+    case 'cadNew': cadOpen(D.art || '', true, !!el.closest('#regForm,#editBody')); setTimeout(() => $('#ceArt')?.focus(), 80); break;
+    case 'cadEdit': CE.view = 'edit'; CE.art = D.art; CE.isNew = false; renderCad(); break;
+    case 'cadBack': if (CE.fromForm) closeSheet('cadSheet'); else { CE.view = 'list'; renderCad(); } break;
+    case 'cadClose': closeSheet('cadSheet'); break;
+    case 'cadSave': cadSave(); break;
+    case 'cadDel': cadDelete(); break;
+    case 'cadRevert': cadRevert(); break;
+    case 'cadCsvOut': cadCsvOut(); break;
+    case 'cadCsvIn': $('#cadCsvInput').click(); break;
+    case 'ordMove': ordMove(+D.l, +D.i, +D.d); break;
+    case 'ordSave': ordSave(); break;
+    case 'ordReset': ordReset(); break;
+    case 'ordCancel': closeSheet('ordSheet'); break;
+    case 'qrMode': setQrMode(D.mode); break;
+    case 'qrShare': setQrShare(D.mode); break;
+    case 'qrRecv': setQrRecv(D.mode); break;
+    case 'qrPart': Q.idx = (Q.idx + (+D.d) + Q.parts.length) % Q.parts.length; showQrPart(); break;
+    case 'qrFor': $('#qrMaq').value = D.maq; $('#qrLado').value = D.lado; $('#qrEst').value = D.i; renderQrGen(); $('#qrBox').scrollIntoView({ behavior: 'smooth', block: 'center' }); break;
+    case 'scanStart': scanStart(); break;
+    case 'scanStop': scanStop(); break;
+    case 'scanSwitch': scanSwitch(); break;
+    case 'install': installApp(); break;
+    case 'expHTML': expHTML(); break;
+    case 'expJSON': expJSON(); break;
+    case 'expCSV': expCSV(); break;
+    case 'expEvents': expEvents(); break;
+    case 'pickJSON': $('#jsonInput').click(); break;
+    case 'pickCSV': $('#csvInput').click(); break;
+    case 'clearAll': clearAll(); break;
+    case 'hf': hFilter = D.v; hLimit = 40; renderHistory(); break;
+    case 'histMore': hLimit += 60; renderHistory(); break;
+  }
+});
+function readObsOnly(){ const o = F && $('#fObs', F.root); if (o) F.d.obs = o.value.trim(); }
+$('#jsonInput').addEventListener('change', e => readFile(e.target, importJSON));
+$('#csvInput').addEventListener('change', e => readFile(e.target, importCSV));
+let filterTimer = 0;
+document.addEventListener('input', e => {
+  const t = e.target; if (!t.dataset.filter) return;
+  if (t.hasAttribute('data-upper')) t.value = t.value.toUpperCase();
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(() => t.dataset.filter === 'c' ? renderConsulta() : renderLayout(), 120);
+});
+
+/* ======================= APP INSTALADO (PWA) ======================= */
+/* Só age quando o arquivo está hospedado (https). Aberto como arquivo local, nada muda. */
+let installEvt = null;
+function setupPWA(){
+  if (!/^https?:$/.test(location.protocol)) return;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('Service worker não registrado', e));
+  }
+  // pede ao navegador para não apagar os dados do app quando faltar espaço
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('#installCard').hidden = false; });
+  addEventListener('appinstalled', () => { installEvt = null; $('#installCard').hidden = true; toast('✓ Monitor instalado na tela inicial'); });
+}
+async function installApp(){
+  if (!installEvt) return toast('Use o menu ⋮ do Chrome › Instalar app');
+  installEvt.prompt();
+  try { await installEvt.userChoice; } catch (_) {}
+  installEvt = null; $('#installCard').hidden = true;
+}
+
+/* ======================= INÍCIO ======================= */
+function measureTop(){ const h = $('.top'); if (h) document.documentElement.style.setProperty('--top-h', h.offsetHeight + 'px'); }
+addEventListener('resize', measureTop);
+function init(){
+  measureTop();
+  setupPWA();
+  cadLoad();
+  load();
+  applyLines(S.layout);
+  $('#hdate').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  refreshColorHints();
+  showPage('registro');
+  setTimeout(async () => { await resolvePendingBundle(); await cadResolveConflict(); }, 200);
+}
+init();
+</script>
+</body>
+</html>
